@@ -215,8 +215,6 @@ struct GestureStateMachine {
             let nextMatches = action == nil ? 0 : (consecutiveMatches + 1)
 
             if nextMatches >= configuration.requiredConsecutiveMatches {
-                if let action {
-                }
                 state = .triggered
                 return action
             }

@@ -49,7 +49,7 @@ Do the work yourself. Don't ask me to run terminal commands.
 - **Checks already run:**
   - every Swift file passes `swiftc -parse`;
   - `python3 scripts/check_privacy.py` passes;
-  - 33 Foundation-only XCTests pass on Linux.
+  - 34 Foundation-only XCTests pass on Linux.
   - **Nothing has been compiled against the macOS SDK yet**, so expect some compile errors.
 - **Reference documents:** `README.md`, `PRIVACY.md`, `VERIFICATION.md`, `RELEASE_NOTES.md`, `scripts/release.sh`.
 

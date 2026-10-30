@@ -4901,9 +4901,12 @@ final class AppStore: ObservableObject {
         if !loadOrderFromPageEntries(using: context) {
             loadOrderFromLegacyTopItems(using: context)
         }
-        // The loaders publish on the main queue; save after they have applied.
+        // The loaders publish on the main queue. Save after they have applied,
+        // then refresh from the live store, which now holds the restored layout.
         DispatchQueue.main.async { [weak self] in
-            self?.saveAllOrder()
+            guard let self else { return }
+            self.saveAllOrder()
+            self.refresh()
         }
     }
 

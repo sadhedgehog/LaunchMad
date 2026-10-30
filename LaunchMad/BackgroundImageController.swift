@@ -785,7 +785,7 @@ final class BackgroundImageController: ObservableObject {
     }
 
     private func captureContext(for displayID: CGDirectDisplayID, resolution: ResolvedWallpaper) -> CaptureContext? {
-        func unavailable(_ cause: String) -> CaptureContext? {
+        func unavailable(_: String) -> CaptureContext? {
             return nil
         }
         guard CGPreflightScreenCaptureAccess() else { return unavailable("permission") }
@@ -851,10 +851,6 @@ final class BackgroundImageController: ObservableObject {
 
     private func pruneDisconnectedDesktopFrames() {
         let connected = Set(NSScreen.screens.compactMap { Self.displayID(for: $0) })
-        let disconnected = Set(lastDesktopFrameByDisplay.keys)
-            .union(cachedCaptures.keys).subtracting(connected)
-        for displayID in disconnected {
-        }
         lastDesktopFrameByDisplay = lastDesktopFrameByDisplay.filter { connected.contains($0.key) }
         cachedCaptures = cachedCaptures.filter { connected.contains($0.key) }
         desktopFrameBudgets = desktopFrameBudgets.filter { connected.contains($0.key) }

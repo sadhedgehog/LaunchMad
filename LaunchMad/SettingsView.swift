@@ -2563,9 +2563,6 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
                         .toggleStyle(.switch)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-
-                Color.clear
-                    .frame(maxWidth: .infinity, maxHeight: 1)
             }
         }
         .padding(12)
@@ -5214,16 +5211,21 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
     private func importDataFolder(from srcDir: URL) {
         do {
             // Validate this is a valid export folder
-            guard isValidExportFolder(srcDir) else { return }
+            guard isValidExportFolder(srcDir) else {
+                showBackupImportError(nil)
+                return
+            }
 
+            // Preferences first; the layout restore saves and refreshes last so
+            // the restored layout is what remains in the live store.
             func performImport(importData: Bool, importPrefs: Bool, allowedPrefKeys: Set<String>) throws {
-                if importData {
-                    try appStore.restoreLayout(fromBackupFolder: srcDir)
-                }
                 if importPrefs {
                     importPreferences(from: srcDir, allowedKeys: allowedPrefKeys)
                     appStore.reloadPreferencesFromDefaults()
-                    appStore.refresh()
+                    if !importData { appStore.refresh() }
+                }
+                if importData {
+                    try appStore.restoreLayout(fromBackupFolder: srcDir)
                 }
             }
 
@@ -5316,7 +5318,7 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
                     do {
                         try performImport(importData: importData, importPrefs: importPrefs, allowedPrefKeys: keys)
                     } catch {
-                        // Ignore failed import
+                        showBackupImportError(error)
                     }
                 }
             } else {
@@ -5328,7 +5330,21 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
                 try performImport(importData: importData, importPrefs: importPrefs, allowedPrefKeys: keys)
             }
         } catch {
-            // Ignore errors or surface a user-facing message if desired
+            showBackupImportError(error)
+        }
+    }
+
+    private func showBackupImportError(_ error: Error?) {
+        let alert = NSAlert()
+        alert.messageText = appStore.localized(.importFailedTitle)
+        let message = error.map { ($0 as NSError).localizedDescription.trimmingCharacters(in: .whitespacesAndNewlines) } ?? ""
+        alert.informativeText = message.isEmpty ? "The selected folder is not a LaunchMad backup with a readable layout." : message
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: appStore.localized(.okButton))
+        if let window = NSApp.keyWindow ?? NSApp.mainWindow {
+            alert.beginSheetModal(for: window)
+        } else {
+            AppDelegate.withModalDialog({ alert.runModal() })
         }
     }
 

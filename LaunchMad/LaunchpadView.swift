@@ -430,6 +430,9 @@ struct LaunchpadView: View {
             windowHiddenObserver = nil
             backgroundImageController.clear()
          }
+        .onChange(of: appStore.openFolder) { _, folder in
+            if folder != nil { shortcutFocus = nil }
+        }
         .onChange(of: appStore.shouldShowOnboarding) { wasVisible, visible in
             if wasVisible && !visible {
                 if appStore.isInitialLoading {
@@ -1308,6 +1311,7 @@ struct LaunchpadView: View {
     
     private func handleItemTap(_ item: LaunchpadItem) {
         guard draggingItem == nil else { return }
+        shortcutFocus = nil
         switch item {
         case .app(let app):
             launchApp(app)
@@ -2353,6 +2357,14 @@ extension LaunchpadView {
             return handleShortcutRowKey(event, focus: focus)
         }
 
+        // From the search field, ↓ steps into the Pinned / Last used rows first,
+        // even when the grid itself is empty.
+        if event.keyCode == 125, !isKeyboardNavigationActive, draggingItem == nil,
+           !(isSearchFieldFocused && isIMEComposing()),
+           enterShortcutRows(fromBelow: false) {
+            return nil
+        }
+
         guard !filteredItems.isEmpty else { return event }
         let code = event.keyCode
 
@@ -2445,8 +2457,6 @@ extension LaunchpadView {
         if code == 125 { // down arrow activates navigation first
             if isSearchFieldFocused, isIMEComposing() { return event }
             if !isKeyboardNavigationActive {
-                // From the search field, step into the Pinned / Last used rows first.
-                if enterShortcutRows(fromBelow: false) { return nil }
                 isKeyboardNavigationActive = true
                 setSelectionToPageStart(appStore.currentPage)
                 clampSelection()

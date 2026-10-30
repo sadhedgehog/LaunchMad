@@ -36,6 +36,17 @@ final class LauncherShortcutListsTests: XCTestCase {
         XCTAssertFalse(list.canMove(mail, by: 1))
     }
 
+    func testMoveBeforeTargetInBothDirections() {
+        var list = PinnedAppList(paths: [safari, notes, mail])
+        XCTAssertTrue(list.move(safari, before: mail))
+        XCTAssertEqual(list.paths, [notes, safari, mail])
+        XCTAssertTrue(list.move(mail, before: notes))
+        XCTAssertEqual(list.paths, [mail, notes, safari])
+        XCTAssertFalse(list.move(mail, before: notes))
+        XCTAssertFalse(list.move(mail, before: mail))
+        XCTAssertFalse(list.move("/Applications/Missing.app", before: mail))
+    }
+
     func testPinnedInitSanitizesAndCaps() {
         let many = (0..<(PinnedAppList.maximumCount + 5)).map { "/Applications/App\($0).app" }
         let list = PinnedAppList(paths: [safari, "", safari] + many)

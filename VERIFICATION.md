@@ -15,7 +15,7 @@ This work was done in a Linux environment with no Xcode or macOS SDK, so it coul
 | Syntax check of every Swift source with `swiftc -parse` (Swift 6.1.3, Linux) | 84 files pass |
 | `python3 scripts/check_privacy.py` | Passes on 85 application source files with 23 rule groups. Every `ModelConfiguration` sets `cloudKitDatabase: .none`. |
 | Privacy scan run against the unmodified LaunchNext sources, to confirm it detects problems | Fails as expected: logging, Terminal/quarantine, socket, notification, shell-profile, updater and CloudKit-default findings |
-| Unit tests for the Foundation-only new code, run on Linux with XCTest | 33 tests, 0 failures. `LauncherShortcutListsTests` (13), `BackupFilesTests` (6), `AppContextMenuTests` (14). |
+| Unit tests for the Foundation-only new code, run on Linux with XCTest | 34 tests, 0 failures. `LauncherShortcutListsTests` (14), `BackupFilesTests` (6), `AppContextMenuTests` (14). |
 | English string table | 389 keys, each mapped by an exhaustive `switch`. Every key referenced in code exists, unreferenced keys were removed, and no non-English UI strings remain. The only CJK literals left are folder names matched in the macOS Launchpad database. |
 | Project file | Parses with the `pbxproj` library. Four targets: `LaunchMad`, `LaunchMadTests`, `LaunchMadContextMenuCore`, `LaunchMadWallpaperCore`. Bundle ID `com.sadhedgehog.launchmad`, version 3.0.0 (build 2026103001), ad-hoc signing (`CODE_SIGN_IDENTITY = -`), no development team. |
 

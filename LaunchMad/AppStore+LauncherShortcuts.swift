@@ -64,13 +64,23 @@ extension AppStore {
         }
     }
 
-    /// Moves the pinned app at `path` into the stored position of `target`.
+    /// Moves the pinned app at `path` into the stored position of `target`
+    /// (the two swap places when they are neighbours). Used by Option-arrow.
     /// Positions are taken from the stored list, so hidden or missing pinned
     /// apps keep their place.
     func movePinnedApp(path: String, toPositionOf target: AppInfo) {
         guard let destination = pinnedApps.paths.firstIndex(of: target.url.path) else { return }
         var updated = pinnedApps
         if updated.move(path, to: destination) {
+            pinnedApps = updated
+        }
+    }
+
+    /// Moves the pinned app at `path` so it sits immediately before `target`.
+    /// Used when a pinned app is dropped onto another one.
+    func movePinnedApp(path: String, before target: AppInfo) {
+        var updated = pinnedApps
+        if updated.move(path, before: target.url.path) {
             pinnedApps = updated
         }
     }

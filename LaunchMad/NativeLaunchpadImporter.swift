@@ -390,9 +390,6 @@ class NativeLaunchpadImporter {
             if lhs.rootIndex == rhs.rootIndex { return lhs.container.ordering < rhs.container.ordering }
             return lhs.rootIndex < rhs.rootIndex
         }
-        #if DEBUG
-        let tcIds = topContainers.map { $0.container.rowId }
-        #endif
 
         // 计算页面顺序：每个 topContainer 下的 pages(type=2) 依次追加
         var orderedPages: [LaunchpadDBItem] = []
@@ -401,9 +398,6 @@ class NativeLaunchpadImporter {
             let pagesUnder = (childrenByParent[parentId] ?? []).filter { $0.type == 2 }
             orderedPages.append(contentsOf: pagesUnder)
         }
-        #if DEBUG
-        let pageIds = orderedPages.map { $0.rowId }
-        #endif
 
         // 槽位（每页的直接子项 type=3）
         var pages: [LaunchpadPage] = []

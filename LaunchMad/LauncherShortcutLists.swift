@@ -57,6 +57,16 @@ struct PinnedAppList: Equatable {
         return true
     }
 
+    /// Moves `path` so it sits immediately before `target`.
+    @discardableResult
+    mutating func move(_ path: String, before target: String) -> Bool {
+        guard path != target,
+              let source = paths.firstIndex(of: path),
+              let targetIndex = paths.firstIndex(of: target) else { return false }
+        let destination = source < targetIndex ? targetIndex - 1 : targetIndex
+        return move(path, to: destination)
+    }
+
     func canMove(_ path: String, by offset: Int) -> Bool {
         guard let index = paths.firstIndex(of: path) else { return false }
         let target = index + offset

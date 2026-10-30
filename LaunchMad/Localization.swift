@@ -774,7 +774,7 @@ extension LocalizationKey {
         case .importSuccessfulTitle: return "Import Successful"
         case .importFailedTitle: return "Import Failed"
         case .okButton: return "OK"
-        case .aboutAttribution: return "LaunchMad is based on LaunchMad by RoversX, which is built on LaunchNow by ggkevinnnn."
+        case .aboutAttribution: return "LaunchMad is based on LaunchNext by RoversX, which is built on LaunchNow by ggkevinnnn."
         case .aboutLicense: return "Licensed under the GNU General Public License v3.0."
         case .aboutOfflineNotice: return "LaunchMad has no updater, analytics, accounts or online features."
         case .importLegacyDatabaseHint: return "Import a layout from a Launchpad database file (.db). Unzip archives in Finder first."

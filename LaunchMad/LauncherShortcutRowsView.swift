@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 enum LauncherShortcutRow: Equatable {
@@ -135,7 +136,7 @@ struct LauncherShortcutRowsView: View {
                 .dropDestination(for: String.self) { payloads, _ in
                     guard let path = payloads.first.flatMap(PinnedAppDragPayload.decode),
                           path != app.url.path else { return false }
-                    appStore.movePinnedApp(path: path, toPositionOf: app)
+                    appStore.movePinnedApp(path: path, before: app)
                     return true
                 } isTargeted: { targeted in
                     if targeted {
