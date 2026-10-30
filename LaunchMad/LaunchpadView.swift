@@ -430,9 +430,6 @@ struct LaunchpadView: View {
             windowHiddenObserver = nil
             backgroundImageController.clear()
          }
-        .onChange(of: appStore.openFolder) { _, folder in
-            if folder != nil { shortcutFocus = nil }
-        }
         .onChange(of: appStore.shouldShowOnboarding) { wasVisible, visible in
             if wasVisible && !visible {
                 if appStore.isInitialLoading {
@@ -2333,6 +2330,7 @@ extension LaunchpadView {
     private func handleKeyEvent(_ event: NSEvent) -> NSEvent? {
         if isFolderOpen {
             if event.keyCode == 53 { // esc
+                shortcutFocus = nil
                 let closingFolder = appStore.openFolder
                 withAnimation(LNAnimations.springFast) {
                     appStore.openFolder = nil

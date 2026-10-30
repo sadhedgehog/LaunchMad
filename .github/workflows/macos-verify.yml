@@ -28,9 +28,17 @@ jobs:
         run: |
           set -x
           ls -d /Applications/Xcode*.app || true
-          XCODE="$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1)"
+          for x in /Applications/Xcode*.app; do
+            echo "$x: $(defaults read "$x/Contents/Info" CFBundleShortVersionString 2>/dev/null)"
+          done
+          # Prefer the newest Xcode installed (by version, not by name).
+          XCODE="$(for x in /Applications/Xcode*.app; do
+              v="$(defaults read "$x/Contents/Info" CFBundleShortVersionString 2>/dev/null)" && echo "$v $x"
+            done | sort -V | tail -1 | cut -d' ' -f2-)"
           if [[ -n "${XCODE}" ]]; then sudo xcode-select -s "${XCODE}"; fi
           xcodebuild -version
+          xcrun swift --version
+          xcrun --show-sdk-version
           sw_vers
           uname -m
 
