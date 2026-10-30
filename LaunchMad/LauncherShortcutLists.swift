@@ -187,13 +187,13 @@ struct LauncherShortcutStore {
 /// does not carry the prefix (for example, text dragged from another app) is
 /// ignored.
 enum PinnedAppDragPayload {
-    static let prefix = "launchmad-pinned-app:"
+    nonisolated static let prefix = "launchmad-pinned-app:"
 
-    static func encode(_ path: String) -> String {
+    nonisolated static func encode(_ path: String) -> String {
         prefix + path
     }
 
-    static func decode(_ payload: String) -> String? {
+    nonisolated static func decode(_ payload: String) -> String? {
         guard payload.hasPrefix(prefix) else { return nil }
         let path = String(payload.dropFirst(prefix.count))
         return path.isEmpty ? nil : path

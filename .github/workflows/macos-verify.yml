@@ -65,8 +65,14 @@ jobs:
             > test.log 2>&1 || {
               echo "::group::Failures"; grep -E "error:|failed|XCTAssert|Test Case .* failed" test.log | head -150; echo "::endgroup::"
               tail -80 test.log; exit 1; }
-          grep -E "Executed [0-9]+ tests" test.log | tail -1 | tee test-summary.txt
-          grep -E "Test Case .* (skipped|failed)" test.log | sort -u | tee -a test-summary.txt || true
+          {
+            echo "test cases passed: $(grep -cE "Test [Cc]ase .*passed" test.log || true)"
+            echo "test cases failed: $(grep -cE "Test [Cc]ase .*failed" test.log || true)"
+            echo "test cases skipped: $(grep -cE "Test [Cc]ase .*skipped" test.log || true)"
+            grep -E "Executed [0-9]+ test|\*\* TEST|Test run with" test.log | tail -3 || true
+            grep -E "Test [Cc]ase .*skipped" test.log | sort -u || true
+          } > test-summary.txt
+          cat test-summary.txt
 
       - name: Package (scripts/release.sh, universal)
         run: |
