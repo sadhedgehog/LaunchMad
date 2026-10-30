@@ -1,0 +1,119 @@
+name: macOS build and verify
+
+# Builds, tests, packages and smoke-tests LaunchMad on a GitHub-hosted macOS
+# runner. The packaged ZIP is uploaded as a workflow artifact for inspection;
+# publishing a release stays a manual step.
+
+on:
+  push:
+    branches: ["main", "claude/**"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: macos-verify-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: macos-26
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Toolchain
+        run: |
+          set -x
+          ls -d /Applications/Xcode*.app || true
+          XCODE="$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1)"
+          if [[ -n "${XCODE}" ]]; then sudo xcode-select -s "${XCODE}"; fi
+          xcodebuild -version
+          sw_vers
+          uname -m
+
+      - name: Privacy scan
+        run: python3 scripts/check_privacy.py
+
+      - name: Build (Debug)
+        run: |
+          set -o pipefail
+          xcodebuild -project LaunchMad.xcodeproj -scheme LaunchMad -configuration Debug \
+            -derivedDataPath build/DerivedData CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM="" \
+            build > build-debug.log 2>&1 || {
+              echo "::group::Compiler errors"; grep -E "error:|fatal" build-debug.log | sort -u | head -150; echo "::endgroup::"
+              tail -60 build-debug.log; exit 1; }
+          grep -E "warning:" build-debug.log | grep -v "/DerivedData/" | sort -u > build-warnings.txt || true
+          echo "Warnings: $(wc -l < build-warnings.txt)"
+          head -80 build-warnings.txt
+
+      - name: Unit tests
+        run: |
+          set -o pipefail
+          xcodebuild test -project LaunchMad.xcodeproj -scheme LaunchMad -destination 'platform=macOS' \
+            -derivedDataPath build/DerivedData CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM="" \
+            > test.log 2>&1 || {
+              echo "::group::Failures"; grep -E "error:|failed|XCTAssert|Test Case .* failed" test.log | head -150; echo "::endgroup::"
+              tail -80 test.log; exit 1; }
+          grep -E "Test Suite 'All tests'|Executed [0-9]+ tests|skipped" test.log | tail -20
+
+      - name: Package (scripts/release.sh)
+        run: scripts/release.sh 2>&1 | tee release.log
+
+      - name: Inspect bundle
+        run: |
+          set -x
+          APP=build/DerivedData/Build/Products/Release/LaunchMad.app
+          /usr/libexec/PlistBuddy -c Print "$APP/Contents/Info.plist"
+          find "$APP" -maxdepth 4 | sort
+          find "$APP" -name '*.lproj' -o -name 'SwiftUpdater' -o -name '*.command' | tee unexpected.txt
+          test ! -s unexpected.txt
+          codesign -d --entitlements - "$APP" || true
+          codesign -dvv "$APP" 2>&1 || true
+          otool -L "$APP/Contents/MacOS/LaunchMad"
+          strings -a "$APP/Contents/MacOS/LaunchMad" | grep -Ei 'https?://' | sort -u || true
+
+      - name: Smoke test the app extracted from the ZIP
+        run: |
+          set -x
+          TEST_DIR="$(mktemp -d)"
+          ditto -x -k build/dist/LaunchMad-*.zip "$TEST_DIR"
+          codesign --verify --deep --strict "$TEST_DIR/LaunchMad.app"
+          "$TEST_DIR/LaunchMad.app/Contents/MacOS/LaunchMad" > app-stdout.txt 2>&1 &
+          APP_PID=$!
+          sleep 20
+          ps -p "$APP_PID" -o pid,stat,etime,command || { echo "LaunchMad exited early"; cat app-stdout.txt; exit 1; }
+          for i in 1 2 3; do
+            echo "--- sample $i: network sockets"; lsof -nP -a -p "$APP_PID" -i || true
+            echo "--- sample $i: unix sockets";   lsof -nP -a -p "$APP_PID" -U || true
+            nettop -P -L 1 -p "$APP_PID" -J bytes_in,bytes_out || true
+            sleep 5
+          done
+          echo "--- open files outside system paths"
+          lsof -nP -p "$APP_PID" | grep -v -E ' /(System|usr|private/var/db|Library/Apple)/' || true
+          echo "--- stdout/stderr (should be empty)"; cat app-stdout.txt
+          echo "--- data written"
+          ls -la "$HOME/Library/Application Support/LaunchMad" || true
+          defaults read com.sadhedgehog.launchmad || true
+          ls -la "$HOME/Library/Logs" | grep -i launch || echo "no LaunchMad log folder"
+          ls -la "$HOME/Library/Caches" | grep -i -E 'launchmad|launchnext' || echo "no LaunchMad cache folder"
+          kill "$APP_PID" || true
+          sleep 2
+          kill -9 "$APP_PID" 2>/dev/null || true
+
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: launchmad-${{ github.sha }}
+          path: |
+            build/dist/
+            build-debug.log
+            build-warnings.txt
+            test.log
+            release.log
+            app-stdout.txt
+          if-no-files-found: ignore
+          retention-days: 14
