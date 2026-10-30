@@ -7,7 +7,7 @@ LaunchMad is an offline, privacy-focused application launcher for macOS. It open
 
 LaunchMad has no updater, analytics, accounts, cloud sync, AI features, command-line interface, local servers, or log files. See [PRIVACY.md](PRIVACY.md) for exactly what it stores and what it does not do.
 
-> **Status:** version 3.0.0 is prepared in source. It has not yet been built, run or released from this repository; see [VERIFICATION.md](VERIFICATION.md) for what has and has not been verified. Installation instructions below apply once a release is published.
+> **Status:** version 3.0.0 builds, passes its 129 unit tests and is packaged as a universal ZIP by CI on macOS 26 ([VERIFICATION.md](VERIFICATION.md)). Interactive testing on a Mac and the GitHub release are still pending, so the installation steps below apply once a release is published.
 
 ## Install
 

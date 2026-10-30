@@ -141,7 +141,7 @@ jobs:
         if: always()
         run: |
           echo "=== SUMMARY ==="
-          xcodebuild -version | head -1
+          xcodebuild -version 2>/dev/null | sed -n 1p
           cat test-summary.txt 2>/dev/null || true
           echo "warnings (app sources): $(grep -c . build-warnings.txt 2>/dev/null || echo n/a)"
           sed 's#^.*/LaunchMad/LaunchMad/##' build-warnings.txt 2>/dev/null | head -40 || true
