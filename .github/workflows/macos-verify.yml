@@ -65,10 +65,14 @@ jobs:
             > test.log 2>&1 || {
               echo "::group::Failures"; grep -E "error:|failed|XCTAssert|Test Case .* failed" test.log | head -150; echo "::endgroup::"
               tail -80 test.log; exit 1; }
-          grep -E "Test Suite 'All tests'|Executed [0-9]+ tests|skipped" test.log | tail -20
+          grep -E "Executed [0-9]+ tests" test.log | tail -1 | tee test-summary.txt
+          grep -E "Test Case .* (skipped|failed)" test.log | sort -u | tee -a test-summary.txt || true
 
-      - name: Package (scripts/release.sh)
-        run: scripts/release.sh 2>&1 | tee release.log
+      - name: Package (scripts/release.sh, universal)
+        run: |
+          set -o pipefail
+          UNIVERSAL=1 scripts/release.sh > release.log 2>&1 || { tail -80 release.log; exit 1; }
+          sed -n '/==> Verifying bundle/,$p' release.log | grep -v '^    ' | head -60
 
       - name: Inspect bundle
         run: |
@@ -89,6 +93,10 @@ jobs:
           TEST_DIR="$(mktemp -d)"
           ditto -x -k build/dist/LaunchMad-*.zip "$TEST_DIR"
           codesign --verify --deep --strict "$TEST_DIR/LaunchMad.app"
+          # Seed Last used with one missing and one real app: opening the launcher
+          # must drop the missing entry. Pinned entries are kept even if missing.
+          defaults write com.sadhedgehog.launchmad launchMadRecentAppPaths -array /Applications/LaunchMadMissing.app /System/Applications/Calculator.app
+          defaults write com.sadhedgehog.launchmad launchMadPinnedAppPaths -array /System/Applications/Calculator.app /Applications/LaunchMadMissing.app
           "$TEST_DIR/LaunchMad.app/Contents/MacOS/LaunchMad" > app-stdout.txt 2>&1 &
           APP_PID=$!
           sleep 20
@@ -107,9 +115,34 @@ jobs:
           defaults read com.sadhedgehog.launchmad || true
           ls -la "$HOME/Library/Logs" | grep -i launch || echo "no LaunchMad log folder"
           ls -la "$HOME/Library/Caches" | grep -i -E 'launchmad|launchnext' || echo "no LaunchMad cache folder"
+          RECENT="$(defaults read com.sadhedgehog.launchmad launchMadRecentAppPaths | tr -d ' \n')"
+          PINNED="$(defaults read com.sadhedgehog.launchmad launchMadPinnedAppPaths | tr -d ' \n')"
+          echo "recent=$RECENT pinned=$PINNED"
           kill "$APP_PID" || true
           sleep 2
           kill -9 "$APP_PID" 2>/dev/null || true
+          {
+            echo "smoke: process ran 35s from the extracted ZIP"
+            echo "smoke: network/unix socket samples: see the three lsof samples above"
+            echo "smoke: stdout/stderr bytes: $(wc -c < app-stdout.txt | tr -d ' ')"
+            echo "smoke: recent after open: $RECENT"
+            echo "smoke: pinned after open: $PINNED"
+          } > smoke-summary.txt
+          [[ "$RECENT" == '("/System/Applications/Calculator.app")' ]] || { echo "Last used was not pruned"; exit 1; }
+          [[ "$PINNED" == *LaunchMadMissing* ]] || { echo "Pinned entry was unexpectedly removed"; exit 1; }
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "=== SUMMARY ==="
+          xcodebuild -version | head -1
+          cat test-summary.txt 2>/dev/null || true
+          echo "warnings (app sources): $(grep -c . build-warnings.txt 2>/dev/null || echo n/a)"
+          sed 's#^.*/LaunchMad/LaunchMad/##' build-warnings.txt 2>/dev/null | head -40 || true
+          cat smoke-summary.txt 2>/dev/null || true
+          cat build/dist/SHA256SUMS.txt 2>/dev/null || true
+          lipo -archs build/DerivedData/Build/Products/Release/LaunchMad.app/Contents/MacOS/LaunchMad 2>/dev/null || true
+          ls -l build/dist 2>/dev/null || true
 
       - name: Upload artifacts
         if: always()
@@ -123,5 +156,7 @@ jobs:
             test.log
             release.log
             app-stdout.txt
+            test-summary.txt
+            smoke-summary.txt
           if-no-files-found: ignore
           retention-days: 14
