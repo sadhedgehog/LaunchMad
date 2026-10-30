@@ -14,22 +14,11 @@ dist/
 .AppleDouble
 .LSOverride
 
-# Swift updater build artifacts
-UpdaterScripts/SwiftUpdater/.build/
-UpdaterScripts/SwiftUpdater/.build-*/
-
 # Archives
 *.xcarchive
 
 # Breakpoints
 *.xcbkptlist
 
-# Parallel sources
-parallel_version/
-
-# Local AI notes
-LaunchNext/AI/TODO.md
+# Local tool state
 .claude/
-
-# Local docs draft
-/docs/

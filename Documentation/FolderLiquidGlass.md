@@ -209,7 +209,7 @@ with no delayed 0.1/0.5-second second move. Predictions include explicit empty
 placeholders and the page offset after page removal. An unrelated publication of
 the old order cannot redirect the preview back to its source cell.
 
-This algorithm is covered by `LaunchNextTests/GridReorderPlanTests.swift`.
+This algorithm is covered by `LaunchMadTests/GridReorderPlanTests.swift`.
 
 ### Previews, animation and lifecycle
 
