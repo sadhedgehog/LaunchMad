@@ -226,8 +226,10 @@ struct SettingsView: View {
         } message: {
             Text(iconImportError ?? "")
         }
+        .background(SettingsWindowFader(isFaded: appStore.isPreviewingAppearance))
         .onDisappear {
             stopShortcutCapture(cancel: false)
+            appStore.isPreviewingAppearance = false
         }
         .onChange(of: appStore.isFullscreenMode) { _, _ in
             guard selectedSection == .appearance else { return }
@@ -4224,6 +4226,8 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
 
     private var appearancePrimarySection: some View {
         VStack(alignment: .leading, spacing: 16) {
+            appearancePreviewButton
+
             HStack {
                 Text(appStore.localized(.classicMode))
                 Spacer()
@@ -4241,12 +4245,25 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
                             .font(.footnote.monospacedDigit())
                             .foregroundStyle(.secondary)
                     }
-                    Slider(value: $appStore.compactWindowSizeFraction,
-                           in: CompactWindowLayout.sizeFractionRange,
-                           step: 0.05)
+                    previewSlider($appStore.compactWindowSizeFraction,
+                                  in: CompactWindowLayout.sizeFractionRange,
+                                  step: 0.05)
                         .accessibilityLabel(appStore.localized(.windowSizeTitle))
                 }
                 .help(appStore.localized(.windowSizeHint))
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text(appStore.localized(.cornerRadiusTitle))
+                        Spacer()
+                        Text("\(Int(appStore.compactCornerRadius.rounded())) pt")
+                            .font(.footnote.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                    }
+                    previewSlider($appStore.compactCornerRadius,
+                                  in: AppStore.compactCornerRadiusRange,
+                                  step: 2)
+                        .accessibilityLabel(appStore.localized(.cornerRadiusTitle))
+                }
                 WindowDimensionLimitField(title: appStore.localized(.windowMaxWidthTitle),
                                           automatic: appStore.localized(.windowSizeAutomatic),
                                           value: $appStore.compactWindowMaxWidth)
@@ -4502,13 +4519,30 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
                         .font(.footnote.monospacedDigit())
                         .foregroundStyle(.secondary)
                 }
-                Slider(value: Binding(get: { appStore.backgroundTint(for: colorScheme) },
+                previewSlider(Binding(get: { appStore.backgroundTint(for: colorScheme) },
                                       set: { appStore.setBackgroundTint($0) }),
-                       in: AppStore.backgroundTintRange,
-                       step: 0.05)
+                              in: AppStore.backgroundTintRange,
+                              step: 0.05)
                     .accessibilityLabel(appStore.localized(.backgroundTintTitle))
             }
             .help(appStore.localized(.backgroundTintHint))
+
+            if appStore.isFullscreenMode {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text(appStore.localized(.fullscreenDimmingTitle))
+                        Spacer()
+                        Text("\(Int((appStore.fullscreenDimming * 100).rounded()))%")
+                            .font(.footnote.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                    }
+                    previewSlider($appStore.fullscreenDimming,
+                                  in: AppStore.fullscreenDimmingRange,
+                                  step: 0.05)
+                        .accessibilityLabel(appStore.localized(.fullscreenDimmingTitle))
+                }
+                .help(appStore.localized(.fullscreenDimmingHint))
+            }
 
             HStack {
                 Text(appStore.localized(.backgroundMaskTitle))
@@ -4560,6 +4594,9 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
                     .opacity(appStore.backgroundImageEnabled ? 1 : 0.45)
                     .help(appStore.localized(appStore.backgroundImageEnabled
                         ? .backgroundStyleUnfilteredMemoryHint : .backgroundStyleUnfilteredRequiresImage))
+            }
+            if selectedBackgroundStyle == .glass {
+                glassOptions
             }
             if !appStore.backgroundImageEnabled || selectedBackgroundStyle == .unfiltered {
                 Text(appStore.localized(appStore.backgroundImageEnabled
@@ -4709,6 +4746,73 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
         return true
     }
 
+    private var appearancePreviewButton: some View {
+        HStack(spacing: 10) {
+            Label(appStore.localized(.appearancePreviewTitle), systemImage: "eye")
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(Capsule().fill(Color(nsColor: .quaternarySystemFill)))
+                .contentShape(Capsule())
+                .gesture(
+                    DragGesture(minimumDistance: 0)
+                        .onChanged { _ in
+                            if !appStore.isPreviewingAppearance { appStore.isPreviewingAppearance = true }
+                        }
+                        .onEnded { _ in appStore.isPreviewingAppearance = false }
+                )
+                .accessibilityAddTraits(.isButton)
+            Text(appStore.localized(.appearancePreviewHint))
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    /// A slider that fades Settings while it is dragged, so the launcher shows behind.
+    @ViewBuilder
+    private func previewSlider(_ value: Binding<Double>, in range: ClosedRange<Double>, step: Double? = nil) -> some View {
+        if let step {
+            Slider(value: value, in: range, step: step) { editing in
+                appStore.isPreviewingAppearance = editing
+            }
+        } else {
+            Slider(value: value, in: range) { editing in
+                appStore.isPreviewingAppearance = editing
+            }
+        }
+    }
+
+    private var glassOptions: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(appStore.localized(.glassStyleTitle))
+                    .font(.subheadline.weight(.semibold))
+                Picker(appStore.localized(.glassStyleTitle), selection: $appStore.glassVariant) {
+                    Text(appStore.localized(.glassStyleClear)).tag(AppStore.GlassVariant.clear)
+                    Text(appStore.localized(.glassStyleRegular)).tag(AppStore.GlassVariant.regular)
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+            }
+            .help(appStore.localized(.glassStyleHint))
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text(appStore.localized(.glassBlurTitle))
+                    .font(.subheadline.weight(.semibold))
+                Picker(appStore.localized(.glassBlurTitle), selection: $appStore.glassBlur) {
+                    Text(appStore.localized(.glassBlurOff)).tag(AppStore.GlassBlur.off)
+                    Text(appStore.localized(.glassBlurLight)).tag(AppStore.GlassBlur.light)
+                    Text(appStore.localized(.glassBlurMedium)).tag(AppStore.GlassBlur.medium)
+                    Text(appStore.localized(.glassBlurStrong)).tag(AppStore.GlassBlur.strong)
+                    Text(appStore.localized(.glassBlurMax)).tag(AppStore.GlassBlur.max)
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+            }
+            .help(appStore.localized(.glassBlurHint))
+        }
+    }
+
     private var selectedBackgroundStyle: AppStore.BackgroundStyle {
         appStore.launchpadBackgroundStyle == .unfiltered && !appStore.backgroundImageEnabled
             ? .glass : appStore.launchpadBackgroundStyle
@@ -4799,7 +4903,7 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
                     Spacer()
                     layoutModeScopeControl()
                 }
-                Slider(value: scopedIconScaleBinding(), in: 0.6...1.15)
+                previewSlider(scopedIconScaleBinding(), in: 0.6...1.15)
                 HStack {
                     Text(appStore.localized(.smaller)).font(.footnote)
                     Spacer()
@@ -4814,9 +4918,9 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
             VStack(alignment: .leading, spacing: 8) {
                 Text(appStore.localized(.launcherRowIconSizeTitle))
                     .font(.headline)
-                Slider(value: $appStore.launcherRowIconScale,
-                       in: AppStore.launcherRowIconScaleRange,
-                       step: 0.05)
+                previewSlider($appStore.launcherRowIconScale,
+                              in: AppStore.launcherRowIconScaleRange,
+                              step: 0.05)
                     .accessibilityLabel(appStore.localized(.launcherRowIconSizeTitle))
                 HStack {
                     Text(appStore.localized(.smaller)).font(.footnote)
@@ -4828,6 +4932,16 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
                     Text(appStore.localized(.larger)).font(.footnote)
                 }
             }
+
+            HStack {
+                Text(appStore.localized(.launcherRowShowLabelsTitle))
+                Spacer()
+                Toggle("", isOn: $appStore.launcherRowShowLabels)
+                    .labelsHidden()
+                    .toggleStyle(.switch)
+            }
+            .disabled(!appStore.showLabels)
+            .opacity(appStore.showLabels ? 1 : 0.45)
 
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
@@ -5611,5 +5725,23 @@ private struct WindowDimensionLimitField: View {
         if text.isEmpty { value = 0 }
         else if let number = Int(text), number >= 0 { value = number }
         syncDraft()
+    }
+}
+
+/// Fades the Settings sheet's window so the launcher behind it shows while previewing.
+private struct SettingsWindowFader: NSViewRepresentable {
+    let isFaded: Bool
+
+    func makeNSView(context: Context) -> NSView { NSView() }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+        let target: CGFloat = isFaded ? 0.1 : 1
+        DispatchQueue.main.async {
+            guard let window = nsView.window, window.alphaValue != target else { return }
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = 0.18
+                window.animator().alphaValue = target
+            }
+        }
     }
 }

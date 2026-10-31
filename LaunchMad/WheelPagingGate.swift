@@ -44,6 +44,17 @@ struct WheelPagingGate {
         return direction
     }
 
+    /// Converts wheel deltas into a paging delta where positive means the next page.
+    ///
+    /// Rolling the wheel down (or tilting it right) pages forward on the physical
+    /// device. macOS reverses wheel deltas when natural scrolling is on, so the
+    /// event's `isDirectionInvertedFromDevice` is undone first.
+    static func forwardDelta(deltaX: Double, deltaY: Double, isDirectionInvertedFromDevice: Bool) -> Double {
+        let dominant = abs(deltaX) > abs(deltaY) ? deltaX : deltaY
+        let deviceDelta = isDirectionInvertedFromDevice ? -dominant : dominant
+        return -deviceDelta
+    }
+
     mutating func reset() {
         self = WheelPagingGate()
     }

@@ -147,7 +147,9 @@ extension CAGridView {
             */
 
             // Mouse wheel paging keeps its own reverse setting.
-            handleWheelPaging(with: scaledDelta, isSmooth: isPrecise)
+            let forward = WheelPagingGate.forwardDelta(deltaX: Double(deltaX), deltaY: Double(deltaY),
+                                                       isDirectionInvertedFromDevice: event.isDirectionInvertedFromDevice)
+            handleWheelPaging(with: CGFloat(forward) * sensitivityScale, isSmooth: isPrecise)
             return
         }
 
@@ -214,16 +216,17 @@ extension CAGridView {
         }
     }
 
-    private func handleWheelPaging(with scaledDelta: CGFloat, isSmooth: Bool) {
-        // 固定阈值，灵敏度变化已反映在 scaledDelta
-        let direction = wheelPagingGate.register(delta: Double(scaledDelta),
+    /// `forwardDelta` is positive for the next page (wheel down), already scaled by sensitivity.
+    private func handleWheelPaging(with forwardDelta: CGFloat, isSmooth: Bool) {
+        // 固定阈值，灵敏度变化已反映在 forwardDelta
+        let direction = wheelPagingGate.register(delta: Double(forwardDelta),
                                                  isSmooth: isSmooth,
                                                  at: ProcessInfo.processInfo.systemUptime)
         guard direction != 0 else { return }
         let effectiveDirection = reverseWheelPagingDirection ? -direction : direction
 
-        // Keep existing CA direction semantics by default; optional override flips wheel-only paging.
-        let targetPage = effectiveDirection > 0 ? currentPage - 1 : currentPage + 1
+        // Wheel down pages forward; the optional override flips wheel-only paging.
+        let targetPage = effectiveDirection > 0 ? currentPage + 1 : currentPage - 1
         navigateToPage(targetPage, animated: true)
     }
 

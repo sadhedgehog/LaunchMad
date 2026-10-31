@@ -145,6 +145,35 @@ final class AppStore: ObservableObject {
         }
     }
 
+    /// Liquid Glass variant for the launcher background.
+    enum GlassVariant: String, CaseIterable, Identifiable {
+        case clear
+        case regular
+
+        var id: String { rawValue }
+    }
+
+    /// Extra blur drawn behind the launcher's Liquid Glass.
+    enum GlassBlur: String, CaseIterable, Identifiable {
+        case off
+        case light
+        case medium
+        case strong
+        case max
+
+        var id: String { rawValue }
+
+        var material: Material? {
+            switch self {
+            case .off: return nil
+            case .light: return .ultraThinMaterial
+            case .medium: return .thinMaterial
+            case .strong: return .regularMaterial
+            case .max: return .thickMaterial
+            }
+        }
+    }
+
     enum BackgroundStyle: String, CaseIterable, Identifiable {
         case blur
         case glass
@@ -332,6 +361,15 @@ final class AppStore: ObservableObject {
     static let launcherRowIconScaleKey = "launchMadRowIconScale"
     static let defaultLauncherRowIconScale: Double = 1.0
     static let launcherRowIconScaleRange: ClosedRange<Double> = 0.6...1.6
+    static let launcherRowShowLabelsKey = "launchMadRowShowLabels"
+    static let glassVariantKey = "launchMadGlassVariant"
+    static let glassBlurKey = "launchMadGlassBlur"
+    static let compactCornerRadiusKey = "launchMadCornerRadius"
+    static let defaultCompactCornerRadius: Double = 30
+    static let compactCornerRadiusRange: ClosedRange<Double> = 0...60
+    static let fullscreenDimmingKey = "launchMadFullscreenDimming"
+    static let defaultFullscreenDimming: Double = 0.3
+    static let fullscreenDimmingRange: ClosedRange<Double> = 0...0.7
     static let backgroundTintRange: ClosedRange<Double> = 0...0.9
     static let windowAnimationDurationKey = "windowAnimationDuration"
     static let fuzzySearchEnabledKey = "fuzzySearchEnabled"
@@ -706,6 +744,11 @@ final class AppStore: ObservableObject {
             Self.compactWindowMaxHeightKey: compactWindowMaxHeight,
             Self.compactWindowSizeFractionKey: compactWindowSizeFraction,
             Self.launcherRowIconScaleKey: launcherRowIconScale,
+            Self.launcherRowShowLabelsKey: launcherRowShowLabels,
+            Self.glassVariantKey: glassVariant.rawValue,
+            Self.glassBlurKey: glassBlur.rawValue,
+            Self.compactCornerRadiusKey: compactCornerRadius,
+            Self.fullscreenDimmingKey: fullscreenDimming,
             Self.windowAnimationDurationKey: windowAnimationDuration,
             "useLocalizedThirdPartyTitles": useLocalizedThirdPartyTitles,
             "enableDropPrediction": enableDropPrediction,
@@ -857,7 +900,7 @@ final class AppStore: ObservableObject {
         defaults.set(Self.defaultActivePressScale, forKey: Self.activePressScaleKey)
         defaults.set(Self.defaultIconScale, forKey: "iconScale")
         defaults.set(Self.defaultIconLabelFontSize, forKey: "iconLabelFontSize")
-        defaults.set(IconLabelFontWeightOption.medium.rawValue, forKey: Self.iconLabelFontWeightKey)
+        defaults.set(IconLabelFontWeightOption.regular.rawValue, forKey: Self.iconLabelFontWeightKey)
         defaults.set(Self.defaultAnimationDuration, forKey: "animationDuration")
         defaults.set(true, forKey: Self.windowOpenAnimationKey)
         defaults.set(false, forKey: Self.windowShadowEnabledKey)
@@ -865,6 +908,11 @@ final class AppStore: ObservableObject {
         defaults.set(0, forKey: Self.compactWindowMaxHeightKey)
         defaults.set(CompactWindowLayout.defaultSizeFraction, forKey: Self.compactWindowSizeFractionKey)
         defaults.set(Self.defaultLauncherRowIconScale, forKey: Self.launcherRowIconScaleKey)
+        defaults.set(true, forKey: Self.launcherRowShowLabelsKey)
+        defaults.set(GlassVariant.clear.rawValue, forKey: Self.glassVariantKey)
+        defaults.set(GlassBlur.off.rawValue, forKey: Self.glassBlurKey)
+        defaults.set(Self.defaultCompactCornerRadius, forKey: Self.compactCornerRadiusKey)
+        defaults.set(Self.defaultFullscreenDimming, forKey: Self.fullscreenDimmingKey)
         defaults.set(Self.defaultWindowAnimationDuration, forKey: Self.windowAnimationDurationKey)
         defaults.set(true, forKey: "useLocalizedThirdPartyTitles")
         defaults.set(Self.defaultPageIndicatorOffset, forKey: "pageIndicatorOffset")
@@ -936,7 +984,7 @@ final class AppStore: ObservableObject {
         activePressScale = defaults.object(forKey: Self.activePressScaleKey) as? Double ?? Self.defaultActivePressScale
         useLocalizedThirdPartyTitles = defaults.object(forKey: "useLocalizedThirdPartyTitles") as? Bool ?? true
         useCAGridRenderer = defaults.object(forKey: Self.useCAGridRendererKey) as? Bool ?? true
-        iconLabelFontWeight = defaults.string(forKey: Self.iconLabelFontWeightKey).flatMap(IconLabelFontWeightOption.init(rawValue:)) ?? .medium
+        iconLabelFontWeight = defaults.string(forKey: Self.iconLabelFontWeightKey).flatMap(IconLabelFontWeightOption.init(rawValue:)) ?? .regular
         enableWindowOpenAnimation = defaults.object(forKey: Self.windowOpenAnimationKey) as? Bool ?? true
         windowShadowEnabled = defaults.object(forKey: Self.windowShadowEnabledKey) as? Bool ?? false
         compactWindowMaxWidth = CompactWindowLayout.normalizedMaximumWidth(defaults.integer(forKey: Self.compactWindowMaxWidthKey))
@@ -947,6 +995,13 @@ final class AppStore: ObservableObject {
         launcherRowIconScale = Self.clampLauncherRowIconScale(
             defaults.object(forKey: Self.launcherRowIconScaleKey) as? Double ?? Self.defaultLauncherRowIconScale
         )
+        launcherRowShowLabels = defaults.object(forKey: Self.launcherRowShowLabelsKey) as? Bool ?? true
+        glassVariant = defaults.string(forKey: Self.glassVariantKey).flatMap(GlassVariant.init(rawValue:)) ?? .clear
+        glassBlur = defaults.string(forKey: Self.glassBlurKey).flatMap(GlassBlur.init(rawValue:)) ?? .off
+        compactCornerRadius = Self.clamp(defaults.object(forKey: Self.compactCornerRadiusKey) as? Double,
+                                         to: Self.compactCornerRadiusRange, default: Self.defaultCompactCornerRadius)
+        fullscreenDimming = Self.clamp(defaults.object(forKey: Self.fullscreenDimmingKey) as? Double,
+                                       to: Self.fullscreenDimmingRange, default: Self.defaultFullscreenDimming)
         windowAnimationDuration = Self.clampWindowAnimationDuration(
             defaults.object(forKey: Self.windowAnimationDurationKey) as? Double ?? Self.defaultWindowAnimationDuration
         )
@@ -1692,7 +1747,7 @@ final class AppStore: ObservableObject {
            let value = IconLabelFontWeightOption(rawValue: raw) {
             return value
         }
-        return .medium
+        return .regular
     }() {
         didSet {
             guard iconLabelFontWeight != oldValue else { return }
@@ -1819,6 +1874,70 @@ final class AppStore: ObservableObject {
             guard let self, !self.isFullscreenMode else { return }
             AppDelegate.shared?.updateWindowMode(isFullscreen: false)
         }
+    }
+
+    @Published var launcherRowShowLabels: Bool = UserDefaults.standard.object(forKey: AppStore.launcherRowShowLabelsKey) as? Bool ?? true {
+        didSet {
+            guard launcherRowShowLabels != oldValue else { return }
+            UserDefaults.standard.set(launcherRowShowLabels, forKey: Self.launcherRowShowLabelsKey)
+        }
+    }
+
+    @Published var glassVariant: GlassVariant = UserDefaults.standard.string(forKey: AppStore.glassVariantKey)
+        .flatMap(GlassVariant.init(rawValue:)) ?? .clear {
+        didSet {
+            guard glassVariant != oldValue else { return }
+            UserDefaults.standard.set(glassVariant.rawValue, forKey: Self.glassVariantKey)
+        }
+    }
+
+    @Published var glassBlur: GlassBlur = UserDefaults.standard.string(forKey: AppStore.glassBlurKey)
+        .flatMap(GlassBlur.init(rawValue:)) ?? .off {
+        didSet {
+            guard glassBlur != oldValue else { return }
+            UserDefaults.standard.set(glassBlur.rawValue, forKey: Self.glassBlurKey)
+        }
+    }
+
+    /// Corner radius of the compact launcher window.
+    @Published var compactCornerRadius: Double = AppStore.clamp(
+        UserDefaults.standard.object(forKey: AppStore.compactCornerRadiusKey) as? Double,
+        to: AppStore.compactCornerRadiusRange, default: AppStore.defaultCompactCornerRadius
+    ) {
+        didSet {
+            let clamped = Self.clamp(compactCornerRadius, to: Self.compactCornerRadiusRange, default: Self.defaultCompactCornerRadius)
+            if compactCornerRadius != clamped {
+                compactCornerRadius = clamped
+                return
+            }
+            guard compactCornerRadius != oldValue else { return }
+            UserDefaults.standard.set(compactCornerRadius, forKey: Self.compactCornerRadiusKey)
+            refreshCompactWindowSize()
+        }
+    }
+
+    /// Black dimming drawn over the background in fullscreen mode.
+    @Published var fullscreenDimming: Double = AppStore.clamp(
+        UserDefaults.standard.object(forKey: AppStore.fullscreenDimmingKey) as? Double,
+        to: AppStore.fullscreenDimmingRange, default: AppStore.defaultFullscreenDimming
+    ) {
+        didSet {
+            let clamped = Self.clamp(fullscreenDimming, to: Self.fullscreenDimmingRange, default: Self.defaultFullscreenDimming)
+            if fullscreenDimming != clamped {
+                fullscreenDimming = clamped
+                return
+            }
+            guard fullscreenDimming != oldValue else { return }
+            UserDefaults.standard.set(fullscreenDimming, forKey: Self.fullscreenDimmingKey)
+        }
+    }
+
+    /// True while the user adjusts an appearance control; Settings fades so the launcher shows.
+    @Published var isPreviewingAppearance = false
+
+    static func clamp(_ value: Double?, to range: ClosedRange<Double>, default fallback: Double) -> Double {
+        guard let value, value.isFinite else { return fallback }
+        return min(max(value, range.lowerBound), range.upperBound)
     }
 
     @Published var windowShadowEnabled = false {
@@ -2924,7 +3043,7 @@ final class AppStore: ObservableObject {
             UserDefaults.standard.set(11.0, forKey: "iconLabelFontSize")
         }
         if UserDefaults.standard.object(forKey: AppStore.iconLabelFontWeightKey) == nil {
-            UserDefaults.standard.set(IconLabelFontWeightOption.medium.rawValue, forKey: AppStore.iconLabelFontWeightKey)
+            UserDefaults.standard.set(IconLabelFontWeightOption.regular.rawValue, forKey: AppStore.iconLabelFontWeightKey)
         }
         if UserDefaults.standard.object(forKey: "animationDuration") == nil {
             UserDefaults.standard.set(0.3, forKey: "animationDuration")
@@ -4667,6 +4786,11 @@ final class AppStore: ObservableObject {
             Self.compactWindowSizeFractionKey,
             Self.launcherRowIconScaleKey,
             Self.windowAnimationDurationKey,
+            Self.launcherRowShowLabelsKey,
+            Self.glassVariantKey,
+            Self.glassBlurKey,
+            Self.compactCornerRadiusKey,
+            Self.fullscreenDimmingKey,
             "useLocalizedThirdPartyTitles",
             "pageIndicatorOffset",
             Self.pageIndicatorTopPaddingKey,

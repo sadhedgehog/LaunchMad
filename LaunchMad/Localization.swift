@@ -135,6 +135,23 @@ enum LocalizationKey: String, CaseIterable {
     case backgroundTintTitle
     case backgroundTintHint
     case launcherRowIconSizeTitle
+    case launcherRowShowLabelsTitle
+    case glassStyleTitle
+    case glassStyleClear
+    case glassStyleRegular
+    case glassStyleHint
+    case glassBlurTitle
+    case glassBlurOff
+    case glassBlurLight
+    case glassBlurMedium
+    case glassBlurStrong
+    case glassBlurMax
+    case glassBlurHint
+    case cornerRadiusTitle
+    case fullscreenDimmingTitle
+    case fullscreenDimmingHint
+    case appearancePreviewTitle
+    case appearancePreviewHint
     case backgroundMaskTitle
     case backgroundMaskLightLabel
     case backgroundMaskDarkLabel
@@ -520,7 +537,7 @@ extension LocalizationKey {
         case .reverseWheelPagingTitle: return "Reverse wheel page direction"
         case .reverseWheelVerticalTitle: return "Reverse wheel vertical scroll"
         case .reverseWheelDirectionCardTitle: return "Scroll & paging direction"
-        case .reverseWheelDirectionCardDescription: return "Mouse wheel reversals only affect wheel input. Trackpad and Magic Mouse vertical gestures use their own setting below."
+        case .reverseWheelDirectionCardDescription: return "Roll the mouse wheel down for the next page and up for the previous one, whatever the system scroll direction. Reversals only affect wheel input. Trackpad and Magic Mouse gestures use their own setting below."
         case .trackpadVerticalDirectionTitle: return "Trackpad & Magic Mouse vertical direction"
         case .trackpadVerticalDirectionNatural: return "Finger moves up -> Next page / Show lower items"
         case .trackpadVerticalDirectionReversed: return "Finger moves up -> Previous page / Show upper items"
@@ -534,6 +551,23 @@ extension LocalizationKey {
         case .backgroundTintTitle: return "Background tint"
         case .backgroundTintHint: return "How strongly the background is tinted. 0% shows the plain glass; higher values make it more opaque. Choose the tint colours with Background mask below."
         case .launcherRowIconSizeTitle: return "Pinned and Last used icon size"
+        case .launcherRowShowLabelsTitle: return "Show names in Pinned and Last used"
+        case .glassStyleTitle: return "Glass style"
+        case .glassStyleClear: return "Clear"
+        case .glassStyleRegular: return "Regular"
+        case .glassStyleHint: return "Clear glass is the most see-through. Regular glass is frosted, like most macOS panels."
+        case .glassBlurTitle: return "Background blur"
+        case .glassBlurOff: return "Off"
+        case .glassBlurLight: return "Light"
+        case .glassBlurMedium: return "Medium"
+        case .glassBlurStrong: return "Strong"
+        case .glassBlurMax: return "Max"
+        case .glassBlurHint: return "Blurs what is behind the launcher before the glass is drawn on top."
+        case .cornerRadiusTitle: return "Corner radius"
+        case .fullscreenDimmingTitle: return "Fullscreen dimming"
+        case .fullscreenDimmingHint: return "How much the desktop is darkened behind the fullscreen launcher."
+        case .appearancePreviewTitle: return "Hold to preview"
+        case .appearancePreviewHint: return "Hold this button to hide Settings and see the launcher. Settings also fades while you drag an appearance slider."
         case .backgroundMaskTitle: return "Background mask"
         case .backgroundMaskLightLabel: return "Light appearance mask"
         case .backgroundMaskDarkLabel: return "Dark appearance mask"

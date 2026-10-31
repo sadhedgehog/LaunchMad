@@ -50,4 +50,18 @@ final class WheelPagingGateTests: XCTestCase {
         XCTAssertEqual(gate.register(delta: 0, isSmooth: false, at: 0), 0)
         XCTAssertEqual(gate.register(delta: .nan, isSmooth: true, at: 0), 0)
     }
+
+    func testWheelDownPagesForwardWithOrWithoutNaturalScrolling() {
+        // Wheel down: negative deltaY normally, positive with natural scrolling on.
+        XCTAssertGreaterThan(WheelPagingGate.forwardDelta(deltaX: 0, deltaY: -3, isDirectionInvertedFromDevice: false), 0)
+        XCTAssertGreaterThan(WheelPagingGate.forwardDelta(deltaX: 0, deltaY: 3, isDirectionInvertedFromDevice: true), 0)
+        // Wheel up pages back.
+        XCTAssertLessThan(WheelPagingGate.forwardDelta(deltaX: 0, deltaY: 3, isDirectionInvertedFromDevice: false), 0)
+        XCTAssertLessThan(WheelPagingGate.forwardDelta(deltaX: 0, deltaY: -3, isDirectionInvertedFromDevice: true), 0)
+    }
+
+    func testHorizontalWheelUsesDominantAxis() {
+        XCTAssertEqual(WheelPagingGate.forwardDelta(deltaX: -5, deltaY: 1, isDirectionInvertedFromDevice: false), 5)
+        XCTAssertEqual(WheelPagingGate.forwardDelta(deltaX: -5, deltaY: 1, isDirectionInvertedFromDevice: true), -5)
+    }
 }

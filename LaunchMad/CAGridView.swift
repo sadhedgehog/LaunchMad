@@ -49,7 +49,7 @@ final class CAGridView: NSView, CALayerDelegate, NSDraggingSource {
     var columnSpacing: CGFloat = 24 { didSet { updateLayout() } }
     var rowSpacing: CGFloat = 36 { didSet { updateLayout() } }
     var labelFontSize: CGFloat = 12 { didSet { rebuildLayers() } }  // 默认 12pt，比原来大一点
-    var labelFontWeight: NSFont.Weight = .medium { didSet { updateLabelFonts() } }
+    var labelFontWeight: NSFont.Weight = .regular { didSet { updateLabelFonts() } }
     var showLabels: Bool = true { didSet { updateLabelVisibility() } }
     var isLayoutLocked: Bool = false
     var folderDropZoneScale: CGFloat = CGFloat(AppStore.defaultFolderDropZoneScale)

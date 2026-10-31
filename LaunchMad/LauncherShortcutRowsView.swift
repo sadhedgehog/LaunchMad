@@ -26,8 +26,9 @@ struct LauncherShortcutRowsView: View {
 
     private var cellWidth: CGFloat { max(iconSize + 28, 64) }
     private var labelFontSize: CGFloat { min(CGFloat(appStore.iconLabelFontSize), 11) }
+    private var showsLabels: Bool { appStore.showLabels && appStore.launcherRowShowLabels }
     private var rowHeight: CGFloat {
-        iconSize + 16 + (appStore.showLabels ? labelFontSize + 8 : 0)
+        iconSize + 16 + (showsLabels ? labelFontSize + 8 : 0)
     }
     private let titleColumnWidth: CGFloat = 84
 
@@ -105,7 +106,7 @@ struct LauncherShortcutRowsView: View {
             iconSize: iconSize,
             labelWidth: cellWidth - 8,
             isSelected: focus == LauncherShortcutFocus(row: kind, index: index),
-            showLabel: appStore.showLabels,
+            showLabel: showsLabels,
             labelFontSize: labelFontSize,
             labelFontWeight: appStore.iconLabelFontWeightValue,
             hoverMagnificationEnabled: appStore.enableHoverMagnification,

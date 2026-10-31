@@ -612,7 +612,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSGestureR
         updateWindowShadow()
         guard let contentView = window?.contentView else { return }
         contentView.wantsLayer = true
-        contentView.layer?.cornerRadius = appStore.isFullscreenMode ? 0 : 30
+        contentView.layer?.cornerRadius = appStore.isFullscreenMode ? 0 : CGFloat(appStore.compactCornerRadius)
         contentView.layer?.masksToBounds = true
     }
     

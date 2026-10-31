@@ -11,7 +11,7 @@ extension Color {
 // MARK: - Font Extensions
 extension Font {
     static var `default`: Font {
-        .system(size: 11, weight: .medium)
+        .system(size: 11, weight: .regular)
     }
 }
 

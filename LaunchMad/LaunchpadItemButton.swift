@@ -27,7 +27,7 @@ struct LaunchpadItemButton: View {
          isSelected: Bool = false,
          showLabel: Bool = true,
          labelFontSize: CGFloat = 11,
-         labelFontWeight: Font.Weight = .medium,
+         labelFontWeight: Font.Weight = .regular,
          shouldAllowHover: Bool = true,
          externalScale: CGFloat? = nil,
          hoverMagnificationEnabled: Bool = false,

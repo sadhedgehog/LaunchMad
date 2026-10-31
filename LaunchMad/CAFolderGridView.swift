@@ -45,7 +45,7 @@ final class CAFolderGridView: NSView {
             updateLayout(animated: false)
         }
     }
-    var labelFontWeight: NSFont.Weight = .medium {
+    var labelFontWeight: NSFont.Weight = .regular {
         didSet {
             guard labelFontWeight != oldValue else { return }
             updateLabelFonts()
@@ -816,8 +816,12 @@ final class CAFolderGridView: NSView {
         let dominant = scaledPageDelta(deltaX: deltaX, deltaY: deltaY, isPrecise: isPrecise)
 
         if !isPrecise {
-            if dominant != 0 {
-                handleWheelPaging(with: dominant)
+            let baseline = max(AppStore.defaultScrollSensitivity, 0.0001)
+            let sensitivityScale = CGFloat(max(scrollSensitivity, 0.0001) / baseline)
+            let forward = WheelPagingGate.forwardDelta(deltaX: Double(deltaX), deltaY: Double(deltaY),
+                                                       isDirectionInvertedFromDevice: event.isDirectionInvertedFromDevice)
+            if forward != 0 {
+                handleWheelPaging(with: CGFloat(forward) * sensitivityScale)
             }
             return
         }
@@ -867,14 +871,15 @@ final class CAFolderGridView: NSView {
         return rawDelta * sensitivityScale
     }
 
-    private func handleWheelPaging(with scaledDelta: CGFloat) {
-        let direction = scaledDelta > 0 ? 1 : -1
+    /// `forwardDelta` is positive for the next page (wheel down).
+    private func handleWheelPaging(with forwardDelta: CGFloat) {
+        let direction = forwardDelta > 0 ? 1 : -1
         let effectiveDirection = reverseWheelPagingDirection ? -direction : direction
         if wheelLastDirection != direction {
             wheelAccumulatedDelta = 0
         }
         wheelLastDirection = direction
-        wheelAccumulatedDelta += abs(scaledDelta)
+        wheelAccumulatedDelta += abs(forwardDelta)
 
         let threshold: CGFloat = 2.0
         guard wheelAccumulatedDelta >= threshold else { return }
@@ -884,7 +889,7 @@ final class CAFolderGridView: NSView {
             return
         }
 
-        let targetPage = effectiveDirection > 0 ? currentPage - 1 : currentPage + 1
+        let targetPage = effectiveDirection > 0 ? currentPage + 1 : currentPage - 1
         wheelLastFlipAt = now
         wheelAccumulatedDelta = 0
         if targetPage < 0 || targetPage >= pageCount {

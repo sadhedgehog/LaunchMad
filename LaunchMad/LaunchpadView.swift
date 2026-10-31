@@ -55,19 +55,23 @@ private extension View {
     func launchpadBackgroundStyle(_ style: AppStore.BackgroundStyle,
                                   cornerRadius: CGFloat,
                                   forcedColor: Color? = nil,
-                                  maskColor: Color? = nil) -> some View {
+                                  maskColor: Color? = nil,
+                                  glassVariant: AppStore.GlassVariant = .clear,
+                                  glassBlur: AppStore.GlassBlur = .off) -> some View {
         let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
         if let forcedColor {
             self.background(forcedColor, in: shape)
         } else {
             switch style {
             case .glass:
-                let base = self.liquidGlass(in: shape, clear: true)
-                if let maskColor {
-                    base.background(maskColor, in: shape)
-                } else {
-                    base
-                }
+                // Back to front: optional blur, tint, then the glass itself.
+                self.liquidGlass(in: shape, clear: glassVariant == .clear)
+                    .background {
+                        if let maskColor { shape.fill(maskColor) }
+                    }
+                    .background {
+                        if let material = glassBlur.material { shape.fill(material) }
+                    }
             case .blur:
                 let base = self.background(.ultraThinMaterial, in: shape)
                 if let maskColor {
@@ -181,7 +185,7 @@ struct LaunchpadView: View {
         if appStore.shouldShowOnboarding {
             return colorScheme == .dark ? 0.34 : 0.10
         }
-        return colorScheme == .dark ? 0.30 : 0.35
+        return appStore.fullscreenDimming
     }
 
     private var onboardingLightFilterOpacity: Double {
@@ -503,9 +507,11 @@ struct LaunchpadView: View {
         }
         .padding()
         .launchpadBackgroundStyle(effectiveBackgroundStyle,
-                                  cornerRadius: appStore.isFullscreenMode ? 0 : 30,
+                                  cornerRadius: appStore.isFullscreenMode ? 0 : CGFloat(appStore.compactCornerRadius),
                                   forcedColor: nil,
-                                  maskColor: appStore.backgroundMaskColor(for: colorScheme))
+                                  maskColor: appStore.backgroundMaskColor(for: colorScheme),
+                                  glassVariant: appStore.glassVariant,
+                                  glassBlur: appStore.glassBlur)
     }
 
     private var launchpadBackdropLayer: some View {
@@ -729,7 +735,7 @@ struct LaunchpadView: View {
         ZStack {
             // 全窗口滚动捕获层（不拦截点击，仅监听滚动）
             if !appStore.useCAGridRenderer {
-                ScrollEventCatcher { deltaX, deltaY, phase, isMomentum, isPrecise in
+                ScrollEventCatcher { deltaX, deltaY, phase, isMomentum, isPrecise, isInverted in
                     guard !appStore.isSetting else { return }
                     let pageWidth = currentContainerSize.width + config.pageSpacing
                     handleScroll(deltaX: deltaX,
@@ -737,6 +743,7 @@ struct LaunchpadView: View {
                                  phase: phase,
                                  isMomentum: isMomentum,
                                  isPrecise: isPrecise,
+                                 isDirectionInverted: isInverted,
                                  pageWidth: pageWidth)
                 }
                 .ignoresSafeArea()
@@ -2979,12 +2986,13 @@ extension LaunchpadView {
         return scaled * (value >= 0 ? 1 : -1) * limit
     }
 
-    private func handleWheelScroll(_ primaryDelta: CGFloat, isSmooth: Bool) {
+    /// `forwardDelta` is positive for the next page (wheel down).
+    private func handleWheelScroll(_ forwardDelta: CGFloat, isSmooth: Bool) {
         let baselineSensitivity = max(AppStore.defaultScrollSensitivity, 0.0001)
         let relativeSensitivity = max(appStore.scrollSensitivity, 0.0001) / baselineSensitivity
         // Scale wheel threshold by sensitivity.
         let threshold = WheelPagingGate.defaultThreshold / relativeSensitivity
-        let direction = scrollState.wheelGate.register(delta: Double(primaryDelta),
+        let direction = scrollState.wheelGate.register(delta: Double(forwardDelta),
                                                        threshold: threshold,
                                                        isSmooth: isSmooth,
                                                        at: ProcessInfo.processInfo.systemUptime)
@@ -3012,6 +3020,7 @@ extension LaunchpadView {
                               phase: NSEvent.Phase,
                               isMomentum: Bool,
                               isPrecise: Bool,
+                              isDirectionInverted: Bool,
                               pageWidth: CGFloat) {
         guard !isFolderOpen else { return }
 
@@ -3025,9 +3034,12 @@ extension LaunchpadView {
         }
         let primaryDelta = abs(deltaX) >= abs(deltaY) ? deltaX : verticalDelta
 
+        let wheelForwardDelta = CGFloat(WheelPagingGate.forwardDelta(deltaX: Double(deltaX), deltaY: Double(deltaY),
+                                                                     isDirectionInvertedFromDevice: isDirectionInverted))
+
         // Wheel input: accumulate deltas and apply a short cooldown.
         if usesWheelPaging {
-            handleWheelScroll(primaryDelta, isSmooth: isPrecise)
+            handleWheelScroll(wheelForwardDelta, isSmooth: isPrecise)
             return
         }
 
@@ -3061,7 +3073,7 @@ extension LaunchpadView {
 
         // Follow-scroll mode: drag-like offset while scrolling, then settle.
         if phase == [] {
-            handleWheelScroll(primaryDelta, isSmooth: true)
+            handleWheelScroll(wheelForwardDelta, isSmooth: true)
             return
         }
         if isMomentum && phase != .ended && phase != .cancelled { return }
@@ -3117,7 +3129,8 @@ extension LaunchpadView {
 // MARK: - AppKit Scroll catcher
 struct ScrollEventCatcher: NSViewRepresentable {
     typealias NSViewType = ScrollEventCatcherView
-    let onScroll: (CGFloat, CGFloat, NSEvent.Phase, Bool, Bool) -> Void
+    /// deltaX, deltaY, phase, isMomentum, isPrecise, isDirectionInvertedFromDevice
+    let onScroll: (CGFloat, CGFloat, NSEvent.Phase, Bool, Bool, Bool) -> Void
 
     func makeNSView(context: Context) -> ScrollEventCatcherView {
         let view = ScrollEventCatcherView()
@@ -3130,7 +3143,7 @@ struct ScrollEventCatcher: NSViewRepresentable {
     }
 
     final class ScrollEventCatcherView: NSView {
-        var onScroll: ((CGFloat, CGFloat, NSEvent.Phase, Bool, Bool) -> Void)?
+        var onScroll: ((CGFloat, CGFloat, NSEvent.Phase, Bool, Bool, Bool) -> Void)?
         private var eventMonitor: Any?
 
         override var acceptsFirstResponder: Bool { true }
@@ -3144,7 +3157,8 @@ struct ScrollEventCatcher: NSViewRepresentable {
                       event.scrollingDeltaY,
                       phase,
                       isMomentum,
-                      isPreciseOrTrackpad)
+                      isPreciseOrTrackpad,
+                      event.isDirectionInvertedFromDevice)
         }
 
         override func viewDidMoveToWindow() {
@@ -3159,7 +3173,8 @@ struct ScrollEventCatcher: NSViewRepresentable {
                                 event.scrollingDeltaY,
                                 phase,
                                 isMomentum,
-                                isPreciseOrTrackpad)
+                                isPreciseOrTrackpad,
+                                event.isDirectionInvertedFromDevice)
                 return event
             }
         }
