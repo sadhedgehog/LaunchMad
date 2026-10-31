@@ -11,6 +11,7 @@
 		B10000722F70000100ABCDEF /* BackupFiles.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000712F70000100ABCDEF /* BackupFiles.swift */; };
 		B10000622F70000100ABCDEF /* LauncherShortcutLists.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000612F70000100ABCDEF /* LauncherShortcutLists.swift */; };
 		B10000242F70000100ABCDEF /* CompactWindowLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000232F70000100ABCDEF /* CompactWindowLayout.swift */; };
+		B10000822F70000100ABCDEF /* WheelPagingGate.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000812F70000100ABCDEF /* WheelPagingGate.swift */; };
 		B10000322F70000100ABCDEF /* FolderIconBitmapCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000312F70000100ABCDEF /* FolderIconBitmapCache.swift */; };
 		B10000422F70000100ABCDEF /* FolderPresentationMotion.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000412F70000100ABCDEF /* FolderPresentationMotion.swift */; };
 		B10000522F70000100ABCDEF /* BackgroundLabelContrast.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000512F70000100ABCDEF /* BackgroundLabelContrast.swift */; };
@@ -59,6 +60,7 @@
 		B10000712F70000100ABCDEF /* BackupFiles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = BackupFiles.swift; path = LaunchMad/BackupFiles.swift; sourceTree = SOURCE_ROOT; };
 		B10000612F70000100ABCDEF /* LauncherShortcutLists.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = LauncherShortcutLists.swift; path = LaunchMad/LauncherShortcutLists.swift; sourceTree = SOURCE_ROOT; };
 		B10000232F70000100ABCDEF /* CompactWindowLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CompactWindowLayout.swift; path = LaunchMad/CompactWindowLayout.swift; sourceTree = SOURCE_ROOT; };
+		B10000812F70000100ABCDEF /* WheelPagingGate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = WheelPagingGate.swift; path = LaunchMad/WheelPagingGate.swift; sourceTree = SOURCE_ROOT; };
 		B10000312F70000100ABCDEF /* FolderIconBitmapCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = FolderIconBitmapCache.swift; path = LaunchMad/FolderIconBitmapCache.swift; sourceTree = SOURCE_ROOT; };
 		B10000412F70000100ABCDEF /* FolderPresentationMotion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = FolderPresentationMotion.swift; path = LaunchMad/FolderPresentationMotion.swift; sourceTree = SOURCE_ROOT; };
 		B10000512F70000100ABCDEF /* BackgroundLabelContrast.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = BackgroundLabelContrast.swift; path = LaunchMad/BackgroundLabelContrast.swift; sourceTree = SOURCE_ROOT; };
@@ -167,6 +169,7 @@
 				B10000412F70000100ABCDEF /* FolderPresentationMotion.swift */,
 				B10000512F70000100ABCDEF /* BackgroundLabelContrast.swift */,
 				B10000232F70000100ABCDEF /* CompactWindowLayout.swift */,
+				B10000812F70000100ABCDEF /* WheelPagingGate.swift */,
 			);
 			name = "Recovered References";
 			sourceTree = "<group>";
@@ -347,6 +350,7 @@
 				B10000422F70000100ABCDEF /* FolderPresentationMotion.swift in Sources */,
 				B10000522F70000100ABCDEF /* BackgroundLabelContrast.swift in Sources */,
 				B10000242F70000100ABCDEF /* CompactWindowLayout.swift in Sources */,
+				B10000822F70000100ABCDEF /* WheelPagingGate.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

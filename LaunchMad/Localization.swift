@@ -108,6 +108,8 @@ enum LocalizationKey: String, CaseIterable {
     case changeBackgroundImage
     case backgroundImageUnavailable
     case windowOpenAnimationTitle
+    case windowSizeTitle
+    case windowSizeHint
     case windowMaxWidthTitle
     case windowMaxHeightTitle
     case windowSizeAutomatic
@@ -130,6 +132,9 @@ enum LocalizationKey: String, CaseIterable {
     case hoverMagnificationScale
     case activePressEffect
     case activePressScale
+    case backgroundTintTitle
+    case backgroundTintHint
+    case launcherRowIconSizeTitle
     case backgroundMaskTitle
     case backgroundMaskLightLabel
     case backgroundMaskDarkLabel
@@ -502,10 +507,12 @@ extension LocalizationKey {
         case .changeBackgroundImage: return "Change…"
         case .backgroundImageUnavailable: return "Image unavailable"
         case .windowOpenAnimationTitle: return "Window open/close animation"
+        case .windowSizeTitle: return "Window size"
+        case .windowSizeHint: return "Size of the launcher window as a share of the screen. The window keeps a 4:3 ratio and never grows beyond the screen or the maximum width and height below."
         case .windowMaxWidthTitle: return "Maximum window width"
         case .windowMaxHeightTitle: return "Maximum window height"
         case .windowSizeAutomatic: return "Automatic"
-        case .windowSizeLimitHint: return "Size limits in points (pt). Leave blank or enter 0 for automatic sizing. Custom limits start at 800 wide and 600 high. The window keeps a 4:3 ratio; limits only reduce the automatic size."
+        case .windowSizeLimitHint: return "Size limits in points (pt). Leave blank or enter 0 for automatic sizing. Custom limits start at 800 wide and 600 high. The window keeps a 4:3 ratio; limits only reduce the window size."
         case .windowShadowTitle: return "Window shadow"
         case .windowShadowHint: return "Turn off to help reduce Liquid Glass black-edge artifacts on some systems."
         case .windowAnimationDurationLabel: return "Window animation duration"
@@ -524,6 +531,9 @@ extension LocalizationKey {
         case .hoverMagnificationScale: return "Hover scale"
         case .activePressEffect: return "Press feedback"
         case .activePressScale: return "Press scale"
+        case .backgroundTintTitle: return "Background tint"
+        case .backgroundTintHint: return "How strongly the background is tinted. 0% shows the plain glass; higher values make it more opaque. Choose the tint colours with Background mask below."
+        case .launcherRowIconSizeTitle: return "Pinned and Last used icon size"
         case .backgroundMaskTitle: return "Background mask"
         case .backgroundMaskLightLabel: return "Light appearance mask"
         case .backgroundMaskDarkLabel: return "Dark appearance mask"

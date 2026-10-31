@@ -62,7 +62,7 @@ private extension View {
         } else {
             switch style {
             case .glass:
-                let base = self.liquidGlass(in: shape)
+                let base = self.liquidGlass(in: shape, clear: true)
                 if let maskColor {
                     base.background(maskColor, in: shape)
                 } else {
@@ -126,16 +126,13 @@ struct LaunchpadView: View {
     private struct ScrollState {
         var isUserSwiping: Bool = false
         var accumulatedX: CGFloat = 0
-        var wheelAccumulated: CGFloat = 0
-        var wheelLastDirection: Int = 0
-        var wheelLastFlipAt: Date? = nil
+        var wheelGate = WheelPagingGate()
         var followOffset: CGFloat = 0
         var followLastUpdateAt: TimeInterval = 0
         var followLastOffset: CGFloat = 0
     }
 
     @State private var scrollState = ScrollState()
-    private let wheelFlipCooldown: TimeInterval = 0.15
     @State private var dragPointerOffset: CGPoint = .zero
     @State private var blankDragStartPoint: CGPoint? = nil
     @State private var blankDragShouldIgnore: Bool = false
@@ -164,7 +161,7 @@ struct LaunchpadView: View {
     }
 
     private var launcherShortcutIconSize: CGFloat {
-        config.isFullscreen ? 48 : 34
+        (config.isFullscreen ? 56 : 40) * CGFloat(appStore.launcherRowIconScale)
     }
     private var currentScreenID: String? {
         let screen = NSApp.keyWindow?.screen ?? NSScreen.main
@@ -2982,25 +2979,18 @@ extension LaunchpadView {
         return scaled * (value >= 0 ? 1 : -1) * limit
     }
 
-    private func handleWheelScroll(_ primaryDelta: CGFloat) {
-        if primaryDelta == 0 { return }
-        let direction = primaryDelta > 0 ? 1 : -1
-        let effectiveDirection = appStore.reverseWheelPagingDirection ? -direction : direction
-        if scrollState.wheelLastDirection != direction { scrollState.wheelAccumulated = 0 }
-        scrollState.wheelLastDirection = direction
-        scrollState.wheelAccumulated += abs(primaryDelta)
+    private func handleWheelScroll(_ primaryDelta: CGFloat, isSmooth: Bool) {
         let baselineSensitivity = max(AppStore.defaultScrollSensitivity, 0.0001)
         let relativeSensitivity = max(appStore.scrollSensitivity, 0.0001) / baselineSensitivity
         // Scale wheel threshold by sensitivity.
-        let threshold: CGFloat = 2.0 / CGFloat(relativeSensitivity)
-        let now = Date()
-        if scrollState.wheelAccumulated >= threshold {
-            if let last = scrollState.wheelLastFlipAt, now.timeIntervalSince(last) < wheelFlipCooldown { return }
-            if effectiveDirection > 0 { navigateToNextPage() } else { navigateToPreviousPage() }
-            scrollState.wheelLastFlipAt = now
-            // Reset so one tick flips at most once.
-            scrollState.wheelAccumulated = 0
-        }
+        let threshold = WheelPagingGate.defaultThreshold / relativeSensitivity
+        let direction = scrollState.wheelGate.register(delta: Double(primaryDelta),
+                                                       threshold: threshold,
+                                                       isSmooth: isSmooth,
+                                                       at: ProcessInfo.processInfo.systemUptime)
+        guard direction != 0 else { return }
+        let effectiveDirection = appStore.reverseWheelPagingDirection ? -direction : direction
+        if effectiveDirection > 0 { navigateToNextPage() } else { navigateToPreviousPage() }
     }
 
     private func flipThreshold(_ pageWidth: CGFloat) -> CGFloat {
@@ -3025,17 +3015,19 @@ extension LaunchpadView {
                               pageWidth: CGFloat) {
         guard !isFolderOpen else { return }
 
+        // Smooth-scrolling mice send precise deltas without gesture phases; page them like a wheel.
+        let usesWheelPaging = !isPrecise || (phase.isEmpty && !isMomentum)
         let verticalDelta: CGFloat
-        if isPrecise {
+        if !usesWheelPaging {
             verticalDelta = appStore.trackpadVerticalDirection == .natural ? deltaY : -deltaY
         } else {
             verticalDelta = -deltaY
         }
         let primaryDelta = abs(deltaX) >= abs(deltaY) ? deltaX : verticalDelta
 
-        // Non-precise wheel: accumulate deltas and apply a short cooldown.
-        if !isPrecise {
-            handleWheelScroll(primaryDelta)
+        // Wheel input: accumulate deltas and apply a short cooldown.
+        if usesWheelPaging {
+            handleWheelScroll(primaryDelta, isSmooth: isPrecise)
             return
         }
 
@@ -3069,7 +3061,7 @@ extension LaunchpadView {
 
         // Follow-scroll mode: drag-like offset while scrolling, then settle.
         if phase == [] {
-            handleWheelScroll(primaryDelta)
+            handleWheelScroll(primaryDelta, isSmooth: true)
             return
         }
         if isMomentum && phase != .ended && phase != .cancelled { return }

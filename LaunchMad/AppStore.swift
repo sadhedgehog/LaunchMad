@@ -328,6 +328,11 @@ final class AppStore: ObservableObject {
     static let windowShadowEnabledKey = "windowShadowEnabled"
     static let compactWindowMaxWidthKey = "compactWindowMaxWidth"
     static let compactWindowMaxHeightKey = "compactWindowMaxHeight"
+    static let compactWindowSizeFractionKey = "compactWindowSizeFraction"
+    static let launcherRowIconScaleKey = "launchMadRowIconScale"
+    static let defaultLauncherRowIconScale: Double = 1.0
+    static let launcherRowIconScaleRange: ClosedRange<Double> = 0.6...1.6
+    static let backgroundTintRange: ClosedRange<Double> = 0...0.9
     static let windowAnimationDurationKey = "windowAnimationDuration"
     static let fuzzySearchEnabledKey = "fuzzySearchEnabled"
     static let searchDebounceMillisecondsKey = "searchDebounceMilliseconds"
@@ -699,6 +704,8 @@ final class AppStore: ObservableObject {
             Self.windowShadowEnabledKey: windowShadowEnabled,
             Self.compactWindowMaxWidthKey: compactWindowMaxWidth,
             Self.compactWindowMaxHeightKey: compactWindowMaxHeight,
+            Self.compactWindowSizeFractionKey: compactWindowSizeFraction,
+            Self.launcherRowIconScaleKey: launcherRowIconScale,
             Self.windowAnimationDurationKey: windowAnimationDuration,
             "useLocalizedThirdPartyTitles": useLocalizedThirdPartyTitles,
             "enableDropPrediction": enableDropPrediction,
@@ -856,6 +863,8 @@ final class AppStore: ObservableObject {
         defaults.set(false, forKey: Self.windowShadowEnabledKey)
         defaults.set(0, forKey: Self.compactWindowMaxWidthKey)
         defaults.set(0, forKey: Self.compactWindowMaxHeightKey)
+        defaults.set(CompactWindowLayout.defaultSizeFraction, forKey: Self.compactWindowSizeFractionKey)
+        defaults.set(Self.defaultLauncherRowIconScale, forKey: Self.launcherRowIconScaleKey)
         defaults.set(Self.defaultWindowAnimationDuration, forKey: Self.windowAnimationDurationKey)
         defaults.set(true, forKey: "useLocalizedThirdPartyTitles")
         defaults.set(Self.defaultPageIndicatorOffset, forKey: "pageIndicatorOffset")
@@ -932,6 +941,12 @@ final class AppStore: ObservableObject {
         windowShadowEnabled = defaults.object(forKey: Self.windowShadowEnabledKey) as? Bool ?? false
         compactWindowMaxWidth = CompactWindowLayout.normalizedMaximumWidth(defaults.integer(forKey: Self.compactWindowMaxWidthKey))
         compactWindowMaxHeight = CompactWindowLayout.normalizedMaximumHeight(defaults.integer(forKey: Self.compactWindowMaxHeightKey))
+        compactWindowSizeFraction = CompactWindowLayout.normalizedSizeFraction(
+            defaults.object(forKey: Self.compactWindowSizeFractionKey) as? Double ?? CompactWindowLayout.defaultSizeFraction
+        )
+        launcherRowIconScale = Self.clampLauncherRowIconScale(
+            defaults.object(forKey: Self.launcherRowIconScaleKey) as? Double ?? Self.defaultLauncherRowIconScale
+        )
         windowAnimationDuration = Self.clampWindowAnimationDuration(
             defaults.object(forKey: Self.windowAnimationDurationKey) as? Double ?? Self.defaultWindowAnimationDuration
         )
@@ -1764,6 +1779,39 @@ final class AppStore: ObservableObject {
             UserDefaults.standard.set(compactWindowMaxHeight, forKey: Self.compactWindowMaxHeightKey)
             refreshCompactWindowSize()
         }
+    }
+
+    @Published var compactWindowSizeFraction = CompactWindowLayout.defaultSizeFraction {
+        didSet {
+            let normalized = CompactWindowLayout.normalizedSizeFraction(compactWindowSizeFraction)
+            if compactWindowSizeFraction != normalized {
+                compactWindowSizeFraction = normalized
+                return
+            }
+            guard compactWindowSizeFraction != oldValue else { return }
+            UserDefaults.standard.set(compactWindowSizeFraction, forKey: Self.compactWindowSizeFractionKey)
+            refreshCompactWindowSize()
+        }
+    }
+
+    /// Scale for the Pinned and Last used row icons, relative to their default size.
+    @Published var launcherRowIconScale: Double = AppStore.clampLauncherRowIconScale(
+        UserDefaults.standard.object(forKey: AppStore.launcherRowIconScaleKey) as? Double ?? AppStore.defaultLauncherRowIconScale
+    ) {
+        didSet {
+            let clamped = Self.clampLauncherRowIconScale(launcherRowIconScale)
+            if launcherRowIconScale != clamped {
+                launcherRowIconScale = clamped
+                return
+            }
+            guard launcherRowIconScale != oldValue else { return }
+            UserDefaults.standard.set(launcherRowIconScale, forKey: Self.launcherRowIconScaleKey)
+        }
+    }
+
+    static func clampLauncherRowIconScale(_ value: Double) -> Double {
+        guard value.isFinite else { return defaultLauncherRowIconScale }
+        return min(max(value, launcherRowIconScaleRange.lowerBound), launcherRowIconScaleRange.upperBound)
     }
 
     private func refreshCompactWindowSize() {
@@ -2696,6 +2744,9 @@ final class AppStore: ObservableObject {
         let defaults = UserDefaults.standard
         compactWindowMaxWidth = CompactWindowLayout.normalizedMaximumWidth(defaults.integer(forKey: Self.compactWindowMaxWidthKey))
         compactWindowMaxHeight = CompactWindowLayout.normalizedMaximumHeight(defaults.integer(forKey: Self.compactWindowMaxHeightKey))
+        compactWindowSizeFraction = CompactWindowLayout.normalizedSizeFraction(
+            defaults.object(forKey: Self.compactWindowSizeFractionKey) as? Double ?? CompactWindowLayout.defaultSizeFraction
+        )
         windowShadowEnabled = defaults.object(forKey: Self.windowShadowEnabledKey) as? Bool ?? false
         Self.migrateFolderLiquidGlassDefaultIfNeeded(from: defaults)
         folderLiquidGlassEnabled = Self.loadFolderLiquidGlassEnabled(from: defaults)
@@ -4613,6 +4664,8 @@ final class AppStore: ObservableObject {
             Self.windowShadowEnabledKey,
             Self.compactWindowMaxWidthKey,
             Self.compactWindowMaxHeightKey,
+            Self.compactWindowSizeFractionKey,
+            Self.launcherRowIconScaleKey,
             Self.windowAnimationDurationKey,
             "useLocalizedThirdPartyTitles",
             "pageIndicatorOffset",
@@ -5239,6 +5292,25 @@ final class AppStore: ObservableObject {
             return pageIndicatorTopPadding
         }
         return override.topPadding
+    }
+
+    /// Opacity of the background tint for the given appearance; 0 when the tint is off.
+    func backgroundTint(for colorScheme: ColorScheme) -> Double {
+        guard backgroundMaskEnabled else { return 0 }
+        return colorScheme == .dark ? backgroundMaskDarkColor.alpha : backgroundMaskLightColor.alpha
+    }
+
+    /// Sets the tint opacity for both appearances, keeping their colours.
+    func setBackgroundTint(_ value: Double) {
+        let alpha = min(max(value, Self.backgroundTintRange.lowerBound), Self.backgroundTintRange.upperBound)
+        var light = backgroundMaskLightColor
+        var dark = backgroundMaskDarkColor
+        light.alpha = alpha
+        dark.alpha = alpha
+        if backgroundMaskLightColor != light { backgroundMaskLightColor = light }
+        if backgroundMaskDarkColor != dark { backgroundMaskDarkColor = dark }
+        let enabled = alpha > 0
+        if backgroundMaskEnabled != enabled { backgroundMaskEnabled = enabled }
     }
 
     func backgroundMaskColor(for colorScheme: ColorScheme) -> Color? {

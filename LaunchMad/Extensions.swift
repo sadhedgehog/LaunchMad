@@ -18,9 +18,10 @@ extension Font {
 // MARK: - View Extensions for Glass Effect
 extension View {
     @ViewBuilder
-    func liquidGlass<S: Shape>(in shape: S, isEnabled: Bool = true) -> some View {
+    func liquidGlass<S: Shape>(in shape: S, isEnabled: Bool = true, clear: Bool = false) -> some View {
         if #available(macOS 26.0, iOS 18.0, *) {
-            self.glassEffect(.regular, in: shape)
+            // The clear variant is more translucent, with stronger refraction.
+            self.glassEffect(clear ? .clear : .regular, in: shape)
         } else {
             self.background(.ultraThinMaterial, in: shape)
         }

@@ -619,7 +619,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSGestureR
     private func calculateContentRect(for screen: NSScreen) -> NSRect {
         CompactWindowLayout.frame(in: screen.visibleFrame, minimum: minimumContentSize,
                                   maximumWidth: appStore.compactWindowMaxWidth,
-                                  maximumHeight: appStore.compactWindowMaxHeight)
+                                  maximumHeight: appStore.compactWindowMaxHeight,
+                                  sizeFraction: appStore.compactWindowSizeFraction)
     }
 
     private func updateMinimumWindowSize(_ window: NSWindow, for screen: NSScreen) {

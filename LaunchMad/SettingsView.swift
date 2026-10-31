@@ -4233,6 +4233,20 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
             }
 
             if !appStore.isFullscreenMode {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text(appStore.localized(.windowSizeTitle))
+                        Spacer()
+                        Text("\(Int((appStore.compactWindowSizeFraction * 100).rounded()))%")
+                            .font(.footnote.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                    }
+                    Slider(value: $appStore.compactWindowSizeFraction,
+                           in: CompactWindowLayout.sizeFractionRange,
+                           step: 0.05)
+                        .accessibilityLabel(appStore.localized(.windowSizeTitle))
+                }
+                .help(appStore.localized(.windowSizeHint))
                 WindowDimensionLimitField(title: appStore.localized(.windowMaxWidthTitle),
                                           automatic: appStore.localized(.windowSizeAutomatic),
                                           value: $appStore.compactWindowMaxWidth)
@@ -4479,6 +4493,22 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
             }
             .disabled(!appStore.enableWindowOpenAnimation)
             .opacity(appStore.enableWindowOpenAnimation ? 1 : 0.5)
+
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text(appStore.localized(.backgroundTintTitle))
+                    Spacer()
+                    Text("\(Int((appStore.backgroundTint(for: colorScheme) * 100).rounded()))%")
+                        .font(.footnote.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                }
+                Slider(value: Binding(get: { appStore.backgroundTint(for: colorScheme) },
+                                      set: { appStore.setBackgroundTint($0) }),
+                       in: AppStore.backgroundTintRange,
+                       step: 0.05)
+                    .accessibilityLabel(appStore.localized(.backgroundTintTitle))
+            }
+            .help(appStore.localized(.backgroundTintHint))
 
             HStack {
                 Text(appStore.localized(.backgroundMaskTitle))
@@ -4769,9 +4799,31 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
                     Spacer()
                     layoutModeScopeControl()
                 }
-                Slider(value: scopedIconScaleBinding(), in: 0.8...1.1)
+                Slider(value: scopedIconScaleBinding(), in: 0.6...1.15)
                 HStack {
                     Text(appStore.localized(.smaller)).font(.footnote)
+                    Spacer()
+                    Text("\(Int((scopedIconScaleBinding().wrappedValue * 100).rounded()))%")
+                        .font(.footnote.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Text(appStore.localized(.larger)).font(.footnote)
+                }
+            }
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text(appStore.localized(.launcherRowIconSizeTitle))
+                    .font(.headline)
+                Slider(value: $appStore.launcherRowIconScale,
+                       in: AppStore.launcherRowIconScaleRange,
+                       step: 0.05)
+                    .accessibilityLabel(appStore.localized(.launcherRowIconSizeTitle))
+                HStack {
+                    Text(appStore.localized(.smaller)).font(.footnote)
+                    Spacer()
+                    Text("\(Int((appStore.launcherRowIconScale * 100).rounded()))%")
+                        .font(.footnote.monospacedDigit())
+                        .foregroundStyle(.secondary)
                     Spacer()
                     Text(appStore.localized(.larger)).font(.footnote)
                 }

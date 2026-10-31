@@ -72,4 +72,19 @@ final class CompactWindowLayoutTests: XCTestCase {
         let frame = CompactWindowLayout.frame(in: screen, minimum: minimum, maximumWidth: 800, maximumHeight: 600)
         XCTAssertEqual(frame.size, screen.size)
     }
+
+    func testSizeFractionScalesWindowWithinScreenAndLimits() {
+        let screen = CGRect(x: 0, y: 0, width: 5120, height: 1440)
+        let larger = CompactWindowLayout.frame(in: screen, minimum: minimum, sizeFraction: 0.6)
+        XCTAssertEqual(larger.size, CGSize(width: 1536, height: 1152))
+        // Full size fills the screen height and keeps 4:3.
+        let full = CompactWindowLayout.frame(in: screen, minimum: minimum, sizeFraction: 1.0)
+        XCTAssertEqual(full.size, CGSize(width: 1920, height: 1440))
+        // Maximum limits still cap a larger window.
+        let capped = CompactWindowLayout.frame(in: screen, minimum: minimum, maximumHeight: 900, sizeFraction: 1.0)
+        XCTAssertEqual(capped.size, CGSize(width: 1200, height: 900))
+        XCTAssertEqual(CompactWindowLayout.normalizedSizeFraction(0.1), 0.3)
+        XCTAssertEqual(CompactWindowLayout.normalizedSizeFraction(2), 1.0)
+        XCTAssertEqual(CompactWindowLayout.normalizedSizeFraction(.nan), CompactWindowLayout.defaultSizeFraction)
+    }
 }

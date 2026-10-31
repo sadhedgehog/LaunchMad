@@ -87,13 +87,16 @@ extension CAGridView {
         let deltaX = event.scrollingDeltaX
         let deltaY = event.scrollingDeltaY
         let isPrecise = event.hasPreciseScrollingDeltas
-        let verticalDelta = preciseVerticalDelta(from: deltaY, isPrecise: isPrecise)
+        // Smooth-scrolling mice send precise deltas without gesture phases; page them like a wheel.
+        let isPhaseLess = event.phase.isEmpty && event.momentumPhase.isEmpty
+        let usesWheelPaging = !isPrecise || isPhaseLess
+        let verticalDelta = preciseVerticalDelta(from: deltaY, isPrecise: !usesWheelPaging)
         let delta = abs(deltaX) > abs(deltaY) ? deltaX : verticalDelta
         let baseline = max(AppStore.defaultScrollSensitivity, 0.0001)
         let sensitivityScale = CGFloat(max(scrollSensitivity, 0.0001) / baseline)
         let scaledDelta = delta * sensitivityScale
 
-        if !isPrecise {
+        if usesWheelPaging {
             /*
             // 旧版滚轮跟手 + 定时器 snap 逻辑（保留注释，便于后续对比）
             wheelSnapTimer?.invalidate()
@@ -144,7 +147,7 @@ extension CAGridView {
             */
 
             // Mouse wheel paging keeps its own reverse setting.
-            handleWheelPaging(with: scaledDelta)
+            handleWheelPaging(with: scaledDelta, isSmooth: isPrecise)
             return
         }
 
@@ -211,30 +214,16 @@ extension CAGridView {
         }
     }
 
-    private func handleWheelPaging(with scaledDelta: CGFloat) {
-        guard scaledDelta != 0 else { return }
-
-        let direction = scaledDelta > 0 ? 1 : -1
-        let effectiveDirection = reverseWheelPagingDirection ? -direction : direction
-        if wheelLastDirection != direction {
-            wheelAccumulatedDelta = 0
-        }
-        wheelLastDirection = direction
-        wheelAccumulatedDelta += abs(scaledDelta)
-
+    private func handleWheelPaging(with scaledDelta: CGFloat, isSmooth: Bool) {
         // 固定阈值，灵敏度变化已反映在 scaledDelta
-        let threshold: CGFloat = 2.0
-        guard wheelAccumulatedDelta >= threshold else { return }
-
-        let now = Date()
-        if let last = wheelLastFlipAt, now.timeIntervalSince(last) < wheelFlipCooldown {
-            return
-        }
+        let direction = wheelPagingGate.register(delta: Double(scaledDelta),
+                                                 isSmooth: isSmooth,
+                                                 at: ProcessInfo.processInfo.systemUptime)
+        guard direction != 0 else { return }
+        let effectiveDirection = reverseWheelPagingDirection ? -direction : direction
 
         // Keep existing CA direction semantics by default; optional override flips wheel-only paging.
         let targetPage = effectiveDirection > 0 ? currentPage - 1 : currentPage + 1
-        wheelLastFlipAt = now
-        wheelAccumulatedDelta = 0
         navigateToPage(targetPage, animated: true)
     }
 
@@ -1296,9 +1285,7 @@ extension CAGridView {
     func resetScrollInteractionState() {
         isDragging = false
         accumulatedDelta = 0
-        wheelAccumulatedDelta = 0
-        wheelLastDirection = 0
-        wheelLastFlipAt = nil
+        wheelPagingGate.reset()
     }
 
     /// 计算点击位置对应的网格位置（即使是空白区域）
