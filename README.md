@@ -7,7 +7,7 @@ LaunchMad is an offline, privacy-focused application launcher for macOS. It open
 
 LaunchMad has no updater, analytics, accounts, cloud sync, AI features, command-line interface, local servers, or log files. See [PRIVACY.md](PRIVACY.md) for exactly what it stores and what it does not do.
 
-> **Status:** version 3.0.0 builds, passes its 129 unit tests and is packaged as a universal ZIP by CI on macOS 26 ([VERIFICATION.md](VERIFICATION.md)). Interactive testing on a Mac and the GitHub release are still pending, so the installation steps below apply once a release is published.
+> **Latest release:** [LaunchMad 3.0.0](https://github.com/sadhedgehog/LaunchMad/releases/tag/v3.0.0), a universal (Apple silicon and Intel) build for macOS 26, ad-hoc signed and not notarized. See [VERIFICATION.md](VERIFICATION.md) for what was tested.
 
 ## Install
 
@@ -31,6 +31,8 @@ LaunchMad uses its own bundle identifier (`com.sadhedgehog.launchmad`) and its o
 - **Pinned row:** right-click any app and choose **Pin** (or **Unpin**). Drag pinned apps to reorder them, or select one with the keyboard and press **Option-←/→**.
 - **Last used row:** updates after an app opens successfully from LaunchMad. Click **Clear** to empty it, or right-click an app and choose **Remove from Last Used**.
 - **Keyboard:** from the search field, **↓** moves into Pinned, then Last used, then the grid. **←/→** moves within a row and **↑** goes back up.
+- **Mouse wheel:** roll down for the next page and up for the previous one, including with smooth-scrolling mice. Settings → Gestures can reverse it.
+- **Appearance:** Settings → Appearance sets the window size and corner radius, icon sizes (grid, Pinned and Last used), icons per row and rows per page, glass style, background blur and tint, and whether Pinned and Last used show app names. Settings fades while you drag a slider so you can see the launcher, or hold **Hold to preview**.
 - Settings → General has export/import of your layout and settings. Settings → Backup keeps dated backups in a folder you choose.
 
 ## Build from source

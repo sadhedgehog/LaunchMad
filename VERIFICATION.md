@@ -62,13 +62,43 @@ Getting the first build green needed three compile fixes:
 - **Last used / Pinned:** seeded with a missing and an existing app. Opening the launcher dropped the missing entry from Last used (`("/System/Applications/Calculator.app")`) and kept both Pinned entries, as designed.
 - **Kernel control handles:** `lsof` listed two `[ctl com.apple.netsrc]` handles opened inside the process by Apple frameworks. These are kernel control handles, not network connections, and no traffic was recorded. They are noted here because a strict network audit should know about them.
 
+## 3.0.0: interactive verification (2026-10-30 to 2026-10-31, on the owner's Mac)
+
+Interactive testing was done by hand by the project owner on their Mac, using builds from this branch. They used a Logitech mouse with smooth scrolling. The owner's reports led to these fixes, each re-tested by the owner on a new build:
+
+| Report | Fix | Commit |
+|---|---|---|
+| Scrolling the mouse wheel did not flip pages. | Smooth-scrolling mice send precise scroll events without trackpad gesture phases, and both renderers ignored them. These events now flip one page per wheel movement (`WheelPagingGate`, with unit tests). | `bb1f51f` |
+| Pinned and Last used icons were too small. The launcher could not be resized. The glass was not translucent enough. | Larger row icons with their own size setting, a window size setting, and Clear Liquid Glass with a tint setting. | `bb1f51f` |
+| Wheel paging went the wrong way, and the trackpad direction option did not change it. | macOS reverses wheel deltas when natural scrolling is on. Wheel paging now undoes that, so rolling down always goes to the next page. The wheel-only reverse toggle still flips it. | `6ba571b` |
+| Wanted glass settings, a way to see the launcher while adjusting them, an option to hide row names, and a more standard macOS font. | Glass style, background blur, corner radius and fullscreen dimming settings. Settings fades while a slider is dragged, and there is a hold-to-preview button. A row-names toggle. Labels already used the system font (SF); the default weight changed from Medium to Regular. | `6ba571b` |
+| The lightest background blur already looked like the heaviest. | The blur is a 0–100% slider that fades in the lightest macOS material, up to 75% opacity. | `ee7ba40` |
+
+On the build of `ee7ba40` the owner reported that everything looked good.
+
+Checks run from the terminal on that build:
+
+- **Network:** the app was running after interactive use. In six samples 15 s apart, `lsof -i` showed no network sockets, `lsof -U` showed no Unix sockets, and `nettop` showed no traffic.
+- **Tests:** 138 unit tests passed locally and in CI (run below). The privacy scan passed.
+
+**Not individually confirmed:** the owner tested by hand and did not report on each item of the hands-on checklist in [docs/MAC_HANDOFF_PROMPT.md](docs/MAC_HANDOFF_PROMPT.md) one by one. In particular, no backup was made through the UI during this testing. The backup folder's permissions and contents were therefore not inspected on a Mac. Unit tests (`BackupFilesTests`) cover them.
+
+## 3.0.0: macOS CI for the tested code (2026-10-31, GitHub Actions)
+
+- **Run:** https://github.com/sadhedgehog/LaunchMad/actions/runs/41206044278, commit `ee7ba40`, the last code change before release. Later commits only change documentation.
+- **Results:**
+  - privacy scan passed;
+  - `** TEST SUCCEEDED **` with 138 test cases passed and 0 failed;
+  - universal (`x86_64 arm64`) ZIP;
+  - ad-hoc signature (`flags=adhoc,runtime`) and `codesign --verify --deep --strict` pass;
+  - the smoke test had empty stdout and stderr, and the same Last used/Pinned results as above.
+- **Gatekeeper:** `spctl -a` rejects the app, as expected for an ad-hoc signed, non-notarized build.
+- **Test counts:** the CI summary counts results with `grep`, and parallel test output sometimes splits one result line. If a summary shows one fewer test than this, count unique test names instead.
+
+The release asset is built by CI from the release commit. Its SHA-256 is listed in `SHA256SUMS.txt` on the release page.
+
 ### Not yet verified
 
-These need a person at a Mac. See [docs/MAC_HANDOFF_PROMPT.md](docs/MAC_HANDOFF_PROMPT.md).
-
-- **Interactive use:** clicking, the keyboard, the context menu, dragging to reorder Pinned, a successful launch updating Last used, Clear, folders, compact and fullscreen layouts, both renderers, Settings pages.
-- **Backup and restore** through the UI, and a check that the backup folder contents and permissions match PRIVACY.md.
-- **Network monitoring** during interactive use (the CI smoke test only covers an idle launch).
-- **Gatekeeper first-run** behaviour of the downloaded ad-hoc ZIP on a real Mac ("Open Anyway").
+- **Backup and restore through the UI** on a Mac, including the folder permissions and the preferences keys in the backup (see above).
+- **Gatekeeper first run** of the downloaded release ZIP ("Open Anyway"). Files downloaded with `gh` carry no quarantine attribute, so this path was not exercised.
 - **Signing:** builds are ad-hoc signed. Developer ID signing and notarization have not been done.
-- **Release:** GitHub release, tag and download link.
