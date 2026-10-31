@@ -142,10 +142,6 @@ enum LocalizationKey: String, CaseIterable {
     case glassStyleHint
     case glassBlurTitle
     case glassBlurOff
-    case glassBlurLight
-    case glassBlurMedium
-    case glassBlurStrong
-    case glassBlurMax
     case glassBlurHint
     case cornerRadiusTitle
     case fullscreenDimmingTitle
@@ -558,11 +554,7 @@ extension LocalizationKey {
         case .glassStyleHint: return "Clear glass is the most see-through. Regular glass is frosted, like most macOS panels."
         case .glassBlurTitle: return "Background blur"
         case .glassBlurOff: return "Off"
-        case .glassBlurLight: return "Light"
-        case .glassBlurMedium: return "Medium"
-        case .glassBlurStrong: return "Strong"
-        case .glassBlurMax: return "Max"
-        case .glassBlurHint: return "Blurs what is behind the launcher before the glass is drawn on top."
+        case .glassBlurHint: return "Softly blurs what is behind the launcher before the glass is drawn on top. Keep it low for the clearest glass."
         case .cornerRadiusTitle: return "Corner radius"
         case .fullscreenDimmingTitle: return "Fullscreen dimming"
         case .fullscreenDimmingHint: return "How much the desktop is darkened behind the fullscreen launcher."

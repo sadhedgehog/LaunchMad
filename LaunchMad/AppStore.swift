@@ -153,27 +153,6 @@ final class AppStore: ObservableObject {
         var id: String { rawValue }
     }
 
-    /// Extra blur drawn behind the launcher's Liquid Glass.
-    enum GlassBlur: String, CaseIterable, Identifiable {
-        case off
-        case light
-        case medium
-        case strong
-        case max
-
-        var id: String { rawValue }
-
-        var material: Material? {
-            switch self {
-            case .off: return nil
-            case .light: return .ultraThinMaterial
-            case .medium: return .thinMaterial
-            case .strong: return .regularMaterial
-            case .max: return .thickMaterial
-            }
-        }
-    }
-
     enum BackgroundStyle: String, CaseIterable, Identifiable {
         case blur
         case glass
@@ -363,7 +342,11 @@ final class AppStore: ObservableObject {
     static let launcherRowIconScaleRange: ClosedRange<Double> = 0.6...1.6
     static let launcherRowShowLabelsKey = "launchMadRowShowLabels"
     static let glassVariantKey = "launchMadGlassVariant"
-    static let glassBlurKey = "launchMadGlassBlur"
+    static let glassBlurKey = "launchMadGlassBlurAmount"
+    static let glassBlurRange: ClosedRange<Double> = 0...1
+    /// Opacity of the blur material at 100%. Even the lightest macOS material is a
+    /// heavy blur at launcher size, so it is faded in rather than shown fully.
+    static let glassBlurMaximumOpacity: Double = 0.75
     static let compactCornerRadiusKey = "launchMadCornerRadius"
     static let defaultCompactCornerRadius: Double = 30
     static let compactCornerRadiusRange: ClosedRange<Double> = 0...60
@@ -746,7 +729,7 @@ final class AppStore: ObservableObject {
             Self.launcherRowIconScaleKey: launcherRowIconScale,
             Self.launcherRowShowLabelsKey: launcherRowShowLabels,
             Self.glassVariantKey: glassVariant.rawValue,
-            Self.glassBlurKey: glassBlur.rawValue,
+            Self.glassBlurKey: glassBlur,
             Self.compactCornerRadiusKey: compactCornerRadius,
             Self.fullscreenDimmingKey: fullscreenDimming,
             Self.windowAnimationDurationKey: windowAnimationDuration,
@@ -910,7 +893,7 @@ final class AppStore: ObservableObject {
         defaults.set(Self.defaultLauncherRowIconScale, forKey: Self.launcherRowIconScaleKey)
         defaults.set(true, forKey: Self.launcherRowShowLabelsKey)
         defaults.set(GlassVariant.clear.rawValue, forKey: Self.glassVariantKey)
-        defaults.set(GlassBlur.off.rawValue, forKey: Self.glassBlurKey)
+        defaults.set(0.0, forKey: Self.glassBlurKey)
         defaults.set(Self.defaultCompactCornerRadius, forKey: Self.compactCornerRadiusKey)
         defaults.set(Self.defaultFullscreenDimming, forKey: Self.fullscreenDimmingKey)
         defaults.set(Self.defaultWindowAnimationDuration, forKey: Self.windowAnimationDurationKey)
@@ -997,7 +980,7 @@ final class AppStore: ObservableObject {
         )
         launcherRowShowLabels = defaults.object(forKey: Self.launcherRowShowLabelsKey) as? Bool ?? true
         glassVariant = defaults.string(forKey: Self.glassVariantKey).flatMap(GlassVariant.init(rawValue:)) ?? .clear
-        glassBlur = defaults.string(forKey: Self.glassBlurKey).flatMap(GlassBlur.init(rawValue:)) ?? .off
+        glassBlur = Self.clamp(defaults.object(forKey: Self.glassBlurKey) as? Double, to: Self.glassBlurRange, default: 0)
         compactCornerRadius = Self.clamp(defaults.object(forKey: Self.compactCornerRadiusKey) as? Double,
                                          to: Self.compactCornerRadiusRange, default: Self.defaultCompactCornerRadius)
         fullscreenDimming = Self.clamp(defaults.object(forKey: Self.fullscreenDimmingKey) as? Double,
@@ -1891,11 +1874,19 @@ final class AppStore: ObservableObject {
         }
     }
 
-    @Published var glassBlur: GlassBlur = UserDefaults.standard.string(forKey: AppStore.glassBlurKey)
-        .flatMap(GlassBlur.init(rawValue:)) ?? .off {
+    /// Extra blur behind the launcher's Liquid Glass, from 0 (none) to 1.
+    @Published var glassBlur: Double = AppStore.clamp(
+        UserDefaults.standard.object(forKey: AppStore.glassBlurKey) as? Double,
+        to: AppStore.glassBlurRange, default: 0
+    ) {
         didSet {
+            let clamped = Self.clamp(glassBlur, to: Self.glassBlurRange, default: 0)
+            if glassBlur != clamped {
+                glassBlur = clamped
+                return
+            }
             guard glassBlur != oldValue else { return }
-            UserDefaults.standard.set(glassBlur.rawValue, forKey: Self.glassBlurKey)
+            UserDefaults.standard.set(glassBlur, forKey: Self.glassBlurKey)
         }
     }
 

@@ -57,7 +57,7 @@ private extension View {
                                   forcedColor: Color? = nil,
                                   maskColor: Color? = nil,
                                   glassVariant: AppStore.GlassVariant = .clear,
-                                  glassBlur: AppStore.GlassBlur = .off) -> some View {
+                                  glassBlur: Double = 0) -> some View {
         let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
         if let forcedColor {
             self.background(forcedColor, in: shape)
@@ -70,7 +70,10 @@ private extension View {
                         if let maskColor { shape.fill(maskColor) }
                     }
                     .background {
-                        if let material = glassBlur.material { shape.fill(material) }
+                        if glassBlur > 0 {
+                            shape.fill(.ultraThinMaterial)
+                                .opacity(glassBlur * AppStore.glassBlurMaximumOpacity)
+                        }
                     }
             case .blur:
                 let base = self.background(.ultraThinMaterial, in: shape)

@@ -4797,17 +4797,18 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
             .help(appStore.localized(.glassStyleHint))
 
             VStack(alignment: .leading, spacing: 6) {
-                Text(appStore.localized(.glassBlurTitle))
-                    .font(.subheadline.weight(.semibold))
-                Picker(appStore.localized(.glassBlurTitle), selection: $appStore.glassBlur) {
-                    Text(appStore.localized(.glassBlurOff)).tag(AppStore.GlassBlur.off)
-                    Text(appStore.localized(.glassBlurLight)).tag(AppStore.GlassBlur.light)
-                    Text(appStore.localized(.glassBlurMedium)).tag(AppStore.GlassBlur.medium)
-                    Text(appStore.localized(.glassBlurStrong)).tag(AppStore.GlassBlur.strong)
-                    Text(appStore.localized(.glassBlurMax)).tag(AppStore.GlassBlur.max)
+                HStack {
+                    Text(appStore.localized(.glassBlurTitle))
+                        .font(.subheadline.weight(.semibold))
+                    Spacer()
+                    Text(appStore.glassBlur == 0
+                         ? appStore.localized(.glassBlurOff)
+                         : "\(Int((appStore.glassBlur * 100).rounded()))%")
+                        .font(.footnote.monospacedDigit())
+                        .foregroundStyle(.secondary)
                 }
-                .pickerStyle(.segmented)
-                .labelsHidden()
+                previewSlider($appStore.glassBlur, in: AppStore.glassBlurRange, step: 0.05)
+                    .accessibilityLabel(appStore.localized(.glassBlurTitle))
             }
             .help(appStore.localized(.glassBlurHint))
         }
